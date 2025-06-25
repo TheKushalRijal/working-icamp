@@ -1,0 +1,464 @@
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import Icon from 'react-native-vector-icons/Feather';
+import axios from 'axios';
+import { useEvents } from '../context/EventContext';
+import VideoSection from '../components/videos/VideoSection';
+import BottomNav from '../components/navigation/BottomNav';
+
+// Define the navigation type
+type RootStackParamList = {
+  Home: undefined;
+  Upload: undefined;
+  // Add other screens as needed
+};
+
+type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
+
+// Components
+import FeaturedAnnouncement from '../components/announcements/FeaturedAnnouncements';
+import CommunityLinks from '../components/navigation/CommunityLink';
+import CommunityTabs from '../components/navigation/CommunityTabs';
+import UserPost from '../components/UserPost';
+
+interface Event {
+  id: number;
+  title: string;
+  description: string;
+  date: string;
+  location: string;
+  image?: string;
+  isJoined: boolean;
+}
+
+interface Post {
+  id: number | string;
+  user: string;
+  title: string;
+  text: string;
+  content: string;
+  caption: string;
+  author: string;
+  date: string;
+  likes: number;
+  comments: number;
+  isLiked: boolean;
+  isBookmarked: boolean;
+  location?: { name?: string };
+  Timestamp?: string;
+  preview?: string;
+}
+
+const Home: React.FC = () => {
+  const navigation = useNavigation<NavigationProp>();
+  const { events: initialEvents } = useEvents();
+  const [activeTab, setActiveTab] = useState<'your-community' | 'campus-community'>('your-community');
+
+  const [events, setEvents] = useState<Event[]>(initialEvents);
+  const [firebasePosts, setFirebasePosts] = useState<Post[]>([]);
+  const [localPosts, setLocalPosts] = useState<Post[]>([]);
+  const [backendPosts, setBackendPosts] = useState<Post[]>([]);
+  const [featuredVideos, setFeaturedVideos] = useState<any[]>([]);
+
+  const getFromBackend = async () => {
+    const BASE_URL = __DEV__
+      ? "http://localhost:8000/"
+      : "https://api.sapana.xyz/";
+  
+    try {
+      const homeResponse = await axios.get(`${BASE_URL}home/`, {
+        withCredentials: true,
+      });
+
+      const videosResponse = await axios.get(`${BASE_URL}videos/`, {
+        withCredentials: true,
+      });
+
+      return {
+        home: homeResponse.data,
+        videos: videosResponse.data,
+      };
+    } catch (error) {
+      console.error('Error fetching from backend:', error);
+      return {};
+    }
+  };
+
+  useEffect(() => {
+    const fetchBackendData = async () => {
+      try {
+        const { home, videos } = await getFromBackend();
+        console.log('Backend data received:', { home, videos });
+        
+        if (home && Array.isArray(home)) {
+          const formattedPosts = home.map((post: any) => ({
+            id: post.id || Math.random().toString(),
+            user: post.user || 'Anonymous',
+            title: post.title || '',
+            text: post.content || post.caption || '',
+            content: post.content || post.caption || '',
+            caption: post.caption || '',
+            author: post.author || post.user || 'Anonymous',
+            date: post.date || post.Timestamp || new Date().toISOString(),
+            likes: post.likes || 0,
+            comments: post.comments || 0,
+            isLiked: false,
+            isBookmarked: false,
+            location: post.location || {},
+            Timestamp: post.Timestamp,
+            preview: post.preview
+          }));
+          console.log('Formatted backend posts:', formattedPosts);
+          setBackendPosts(formattedPosts);
+        }
+
+        if (videos && Array.isArray(videos)) {
+          console.log('Featured videos data:', videos);
+          console.log('Video URLs:', videos.map(v => v.url));
+          console.log('Video titles:', videos.map(v => v.title));
+          setFeaturedVideos(videos);
+        } else {
+          console.log('No videos data received or invalid format:', videos);
+        }
+      } catch (error) {
+        console.error('Error fetching backend data:', error);
+      }
+    };
+
+    fetchBackendData();
+  }, []);
+
+  const handleJoinEvent = (eventId: number) => {
+    setEvents(prev =>
+      prev.map(event =>
+        event.id === eventId ? { ...event, isJoined: !event.isJoined } : event
+      )
+    );
+  };
+
+  const handleLikePost = (postId: number | string) => {
+    setFirebasePosts(prev =>
+      prev.map(post =>
+        post.id === postId
+          ? {
+              ...post,
+              isLiked: !post.isLiked,
+              likes: post.isLiked ? post.likes - 1 : post.likes + 1
+            }
+          : post
+      )
+    );
+  };
+
+  const handleUploadPress = () => {
+    navigation.navigate('Upload');
+  };
+
+  const renderContent = () => {
+    // Common announcement for both tabs
+    const renderAnnouncement = () => (
+      <View style={styles.announcementContainer}>
+        <FeaturedAnnouncement 
+          title="📢 Summer Vacation" 
+          description="class starting on Aug 19" 
+        />
+      </View>
+    );
+
+    // Render posts based on active tab
+    const renderPosts = () => {
+      if (activeTab === 'your-community') {
+        return (
+          <>
+            {/* Backend Posts */}
+            {backendPosts.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>Your Posts</Text>
+                {backendPosts.map((post, index) => (
+                  <UserPost
+                    key={`backend-${post.id || index}`}
+                    id={post.id || `backend-${index}`}
+                    user={{ id: post.user || 'username', name: post.user || 'Anonymous' }}
+                    title={post.title || post.user || 'Anonymous'}
+                    content={post.content || post.caption || ''}
+                    location={post.location?.name || ''}
+                    timestamp={post.Timestamp || post.date || new Date().toISOString()}
+                    likes={post.likes || 0}
+                    comments={post.comments || 0}
+                    shares={0}
+                    isLiked={post.isLiked || false}
+                    isBookmarked={post.isBookmarked || false}
+                    onLike={() => {}}
+                  >
+                    {post.preview && (
+                      <View style={styles.postVideoContainer}>
+                        <Text>Video Preview: {post.preview}</Text>
+                      </View>
+                    )}
+                  </UserPost>
+                ))}
+              </>
+            )}
+
+            {/* Events */}
+            {events.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>Your Events</Text>
+                {events.map(event => (
+                  <UserPost
+                    key={event.id}
+                    id={event.id}
+                    user={{ id: String(event.id), name: event.title }}
+                    title={event.title}
+                    content={event.description}
+                    location={event.location}
+                    timestamp={event.date}
+                    likes={event.isJoined ? 1 : 0}
+                    comments={0}
+                    shares={0}
+                    isLiked={event.isJoined}
+                    isBookmarked={false}
+                    onLike={() => handleJoinEvent(event.id)}
+                  />
+                ))}
+              </>
+            )}
+
+            {/* Empty State */}
+            {backendPosts.length === 0 && events.length === 0 && (
+              <View style={styles.emptyStateContainer}>
+                <Text style={styles.emptyStateText}>No posts or events available in your community yet</Text>
+              </View>
+            )}
+          </>
+        );
+      } else {
+        // Campus Community tab shows events and firebase posts
+        return (
+          <>
+            {/* Events */}
+            {events.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>Campus Events</Text>
+                {events.map(event => (
+                  <UserPost
+                    key={event.id}
+                    id={event.id}
+                    user={{ id: String(event.id), name: event.title }}
+                    title={event.title}
+                    content={event.description}
+                    location={event.location}
+                    timestamp={event.date}
+                    likes={event.isJoined ? 1 : 0}
+                    comments={0}
+                    shares={0}
+                    isLiked={event.isJoined}
+                    isBookmarked={false}
+                    onLike={() => handleJoinEvent(event.id)}
+                  />
+                ))}
+              </>
+            )}
+
+            {/* Firebase Posts */}
+            {firebasePosts.length > 0 && (
+              <>
+                <Text style={styles.sectionTitle}>Campus Posts</Text>
+                {firebasePosts.map(post => (
+                  <UserPost
+                    key={post.id}
+                    id={post.id}
+                    user={{ id: 'admin', name: post.author }}
+                    title={post.title}
+                    content={post.content}
+                    timestamp={post.date}
+                    likes={post.likes}
+                    comments={post.comments}
+                    shares={0}
+                    isLiked={post.isLiked}
+                    isBookmarked={false}
+                    onLike={() => handleLikePost(post.id)}
+                  />
+                ))}
+              </>
+            )}
+
+            {/* Empty State */}
+            {events.length === 0 && firebasePosts.length === 0 && (
+              <View style={styles.emptyStateContainer}>
+                <Text style={styles.emptyStateText}>No posts or events available in campus community yet</Text>
+              </View>
+            )}
+          </>
+        );
+      }
+    };
+
+    return (
+      <View style={styles.contentWrapper}>
+        {renderAnnouncement()}
+        <VideoSection activeTab={activeTab} />
+        {renderPosts()}
+      </View>
+    );
+  };
+
+  return (
+    <ScrollView style={styles.container}>
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <View style={styles.logoTitleWrapper}>
+            <View style={styles.logoCircle}>
+              <Text style={{ color: '#DC143C', fontWeight: 'bold' }}>NS</Text>
+            </View>
+            <Text style={styles.welcomeText}>Nepali Student Hub</Text>
+          </View>
+
+          <TouchableOpacity 
+            style={styles.loginBtn} 
+            onPress={handleUploadPress}
+            accessibilityLabel="Upload"
+          >
+            <Icon name="plus" size={24} color="white" />
+          </TouchableOpacity>
+        </View>
+        <CommunityLinks />
+      </View>
+
+      <CommunityTabs activeTab={activeTab} onTabChange={setActiveTab} />
+
+      <View style={styles.contentArea}>
+        {renderContent()}
+      </View>
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#e0dfeb',// background
+  },
+  header: {
+    backgroundColor: '#11182e',// top nav
+    borderBottomWidth: 3,
+    borderBottomColor: '#dc143c',
+  },
+  headerContent: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  loginBtn: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 25,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  logoTitleWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  logoCircle: {
+    width: 40,
+    height: 40,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  welcomeText: {
+    fontSize: 24,
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  contentWrapper: {
+    flex: 1,
+  },
+  announcementContainer: {
+    marginBottom: 16,
+  },
+  contentArea: {
+    padding: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2a4365',
+    marginTop: 16,
+    marginBottom: 12,
+    paddingHorizontal: 12,
+  },
+  videoSection: {
+    marginTop: 32,
+  },
+  videoCard: {
+    width: '100%',
+    borderRadius: 12,
+    overflow: 'hidden',
+    backgroundColor: 'white',
+    marginBottom: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  videoWrapper: {
+    width: '100%',
+    aspectRatio: 16/9,
+    backgroundColor: '#000',
+    overflow: 'hidden',
+  },
+  videoPlayer: {
+    width: '100%',
+    height: '100%',
+    objectFit: 'contain',
+  },
+  videoInfo: {
+    padding: 12,
+  },
+  videoTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2d3748',
+    marginBottom: 4,
+  },
+  videoDescription: {
+    fontSize: 14,
+    color: '#718096',
+    lineHeight: 20,
+  },
+  postVideoContainer: {
+    width: '100%',
+    marginVertical: 20,
+  },
+  emptyStateContainer: {
+    padding: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    marginVertical: 16,
+  },
+  emptyStateText: {
+    color: '#6c757d',
+    fontSize: 16,
+    textAlign: 'center',
+  },
+});
+
+export default Home;
