@@ -167,7 +167,6 @@ const Calendar: React.FC<CalendarProps> = ({
           location="Austin, TX"
         />
       </ScrollView>
-      <BottomNav />
     </View>
   );
 };

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Platform, ScrollView, Dimensions, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, Platform, ScrollView, Dimensions, TouchableOpacity, Image } from 'react-native';
 import axios from 'axios';
+import YoutubePlayer from 'react-native-youtube-iframe';
 
 interface Video {
   id: string | number;
@@ -11,6 +12,7 @@ interface Video {
 
 interface VideoSectionProps {
   activeTab: 'your-community' | 'campus-community';
+  videos?: Video[];
 }
 
 // Sample videos data with minimal info
@@ -29,8 +31,8 @@ const sampleVideos: Video[] = [
   }
 ];
 
-const VideoSection: React.FC<VideoSectionProps> = ({ activeTab }) => {
-  const [videos, setVideos] = useState<Video[]>(sampleVideos);
+const VideoSection: React.FC<VideoSectionProps> = ({ activeTab, videos: propVideos }) => {
+  const [videos, setVideos] = useState<Video[]>(propVideos || sampleVideos);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [playingVideoId, setPlayingVideoId] = useState<string | number | null>(null);
@@ -73,6 +75,11 @@ const VideoSection: React.FC<VideoSectionProps> = ({ activeTab }) => {
   };
 
   useEffect(() => {
+    if (propVideos && Array.isArray(propVideos)) {
+      setVideos(propVideos);
+      setLoading(false);
+      return;
+    }
     const fetchVideos = async () => {
       try {
         setLoading(true);
@@ -100,7 +107,7 @@ const VideoSection: React.FC<VideoSectionProps> = ({ activeTab }) => {
     };
 
     fetchVideos();
-  }, [activeTab]);
+  }, [activeTab, propVideos]);
 
   if (loading) {
     return (
@@ -112,9 +119,7 @@ const VideoSection: React.FC<VideoSectionProps> = ({ activeTab }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>
-        {activeTab === 'your-community' ? 'Your Community Videos' : 'Campus Community Videos'}
-      </Text>
+     
       {videos.length > 0 ? (
         <ScrollView
           horizontal
@@ -133,13 +138,21 @@ const VideoSection: React.FC<VideoSectionProps> = ({ activeTab }) => {
               activeOpacity={0.9}
             >
               <View style={styles.videoWrapper}>
-                {/* For React Native, we'll show thumbnails instead of iframes */}
                 <View style={styles.thumbnailContainer}>
-                  <Text style={styles.videoTitle}>Video {video.id}</Text>
-                  <Text style={styles.videoAuthor}>By: {video.author || 'Unknown'}</Text>
-                  <Text style={styles.videoDescription}>
-                    Tap to watch this video
-                  </Text>
+                  {playingVideoId === video.id ? (
+                    <YoutubePlayer
+                      height={200}
+                      width={cardWidth}
+                      play={true}
+                      videoId={video.url.split('/embed/')[1]}
+                      onChangeState={event => {
+                        if (event === 'ended') setPlayingVideoId(null);
+                      }}
+                      webViewStyle={{ borderRadius: 12 }}
+                    />
+                  ) : (
+                    <Image source={{ uri: video.thumbnail }} style={{ width: '100%', height: 200, borderRadius: 12 }} />
+                  )}
                 </View>
               </View>
             </TouchableOpacity>
@@ -196,12 +209,16 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 200,
     backgroundColor: '#f0f0f0',
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   thumbnailContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 0,
+    width: '100%',
+    height: '100%',
   },
   videoTitle: {
     fontSize: 18,

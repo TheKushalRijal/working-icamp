@@ -2,12 +2,13 @@ import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Home, Calendar, MessageCircle, User } from 'lucide-react-native';
 
-// Import actual screen components
-import HomeScreen from '../../pages/Home';
+import HomeStack from './MainStack';
+import NepaliCalendar from '../calander/calander';
+
+import RidersApp from '../../rideshare/rideshare';
+import StoresNearMe from '../../pages/stores';
 import Housings from '../../pages/housings';
 import ProfilePage from '../../profile/profilehome';
-import NepaliCalendar from '../calander/calander';
-import StoresNearMe from '../../pages/stores';
 
 const Tab = createBottomTabNavigator();
 
@@ -33,6 +34,8 @@ const BottomNav = () => {
               return <Home color={color} size={size} />;
             case 'Events':
               return <Calendar color={color} size={size} />;
+            case 'Rides':
+              return <MessageCircle color={color} size={size} />;
             case 'Places':
               return <MessageCircle color={color} size={size} />;
             case 'Housings':
@@ -45,7 +48,7 @@ const BottomNav = () => {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
+      <Tab.Screen name="Home" component={HomeStack} />
       <Tab.Screen name="Events" component={NepaliCalendar} />
       <Tab.Screen name="Places" component={StoresNearMe} />
       <Tab.Screen name="Housings" component={Housings} />

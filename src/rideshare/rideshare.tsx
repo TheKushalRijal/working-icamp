@@ -3,6 +3,9 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, SafeAreaVi
 //import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import TopNav from '../components/TopNav';
+import BottomNav from '../components/navigation/BottomNav';
+
 
 const RidersApp = () => {
   const nearbyLocations = [
@@ -14,10 +17,11 @@ const RidersApp = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
         {/* Header Section */}
         <View style={styles.header}>
-          <Text style={styles.title}>Riders</Text>
+          <Text style={styles.title}>RIde Help</Text>
           <TouchableOpacity style={styles.addButton}>
             <Ionicons name="add-circle" size={32} color="#4A90E2" />
           </TouchableOpacity>
@@ -37,14 +41,12 @@ const RidersApp = () => {
             style={styles.mapImage}
             resizeMode="cover"
           />
-          <View style={styles.mapOverlay}>
-            <Text style={styles.mapOverlayText}>UTA Campus Map</Text>
-          </View>
+          
         </View>
 
         {/* Nearby Locations Section */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.subheading}>Nearby Locations</Text>
+          <Text style={styles.subheading}>Recent Request</Text>
           <TouchableOpacity>
             <Text style={styles.seeAllText}>See all</Text>
           </TouchableOpacity>
@@ -68,7 +70,7 @@ const RidersApp = () => {
               </View>
               {location.available && (
                 <TouchableOpacity style={styles.joinButton}>
-                  <Text style={styles.joinButtonText}>Join</Text>
+                  <Text style={styles.joinButtonText}>Accept</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -79,6 +81,7 @@ const RidersApp = () => {
           <Text style={styles.privacyText}>Privacy Policy</Text>
         </TouchableOpacity>
       </ScrollView>
+
     </SafeAreaView>
   );
 };
@@ -126,28 +129,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   mapContainer: {
-    height: 200,
-    borderRadius: 12,
-    overflow: 'hidden',
-    marginBottom: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  mapImage: {
-    width: '100%',
-    height: '100%',
-  },
-  mapOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    padding: 8,
-  },
+  height: 500, // or whatever taller height you want
+  borderRadius: 5,
+  overflow: 'hidden',
+  marginBottom: 20,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 4,
+  elevation: 3,
+},
+mapImage: {
+  width: '100%',
+  height: '100%', // match container height
+},
+
   mapOverlayText: {
     color: 'white',
     fontSize: 12,
@@ -170,22 +166,26 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   locationsList: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
-  locationCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
+   locationCard: {
+  backgroundColor: '#fff',
+  borderRadius: 10,
+  paddingVertical: 10,
+  paddingHorizontal: 14,
+  marginBottom: 10,
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.08,
+  shadowRadius: 4,
+  elevation: 2, // Slightly higher for Android depth
+  borderWidth: 0.3,
+  borderColor: '#e0e0e0',
+  minHeight: 60,
+},
   locationInfo: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -195,17 +195,17 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   routeText: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#2C3E50',
     marginBottom: 4,
   },
   distanceText: {
     fontSize: 14,
-    color: '#7F8C8D',
+    color: 'black',
   },
   joinButton: {
-    backgroundColor: '#4A90E2',
+    backgroundColor: '#11182e',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
@@ -217,11 +217,11 @@ const styles = StyleSheet.create({
   },
   privacyButton: {
     alignSelf: 'center',
-    marginTop: 8,
+    marginTop: -15,
   },
   privacyText: {
-    color: '#7F8C8D',
-    fontSize: 12,
+    color: 'black',
+    fontSize: 13,
     textDecorationLine: 'underline',
   },
 });

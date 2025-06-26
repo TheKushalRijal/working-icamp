@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, FlatList } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/Feather';
@@ -7,6 +7,9 @@ import axios from 'axios';
 import { useEvents } from '../context/EventContext';
 import VideoSection from '../components/videos/VideoSection';
 import BottomNav from '../components/navigation/BottomNav';
+import UserPost from '../components/UserPost';
+
+
 
 // Define the navigation type
 type RootStackParamList = {
@@ -21,7 +24,6 @@ type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 import FeaturedAnnouncement from '../components/announcements/FeaturedAnnouncements';
 import CommunityLinks from '../components/navigation/CommunityLink';
 import CommunityTabs from '../components/navigation/CommunityTabs';
-import UserPost from '../components/UserPost';
 
 interface Event {
   id: number;
@@ -130,6 +132,12 @@ const Home: React.FC = () => {
     fetchBackendData();
   }, []);
 
+
+
+
+
+
+
   const handleJoinEvent = (eventId: number) => {
     setEvents(prev =>
       prev.map(event =>
@@ -168,141 +176,110 @@ const Home: React.FC = () => {
     );
 
     // Render posts based on active tab
-    const renderPosts = () => {
-      if (activeTab === 'your-community') {
-        return (
-          <>
-            {/* Backend Posts */}
-            {backendPosts.length > 0 && (
-              <>
-                <Text style={styles.sectionTitle}>Your Posts</Text>
-                {backendPosts.map((post, index) => (
-                  <UserPost
-                    key={`backend-${post.id || index}`}
-                    id={post.id || `backend-${index}`}
-                    user={{ id: post.user || 'username', name: post.user || 'Anonymous' }}
-                    title={post.title || post.user || 'Anonymous'}
-                    content={post.content || post.caption || ''}
-                    location={post.location?.name || ''}
-                    timestamp={post.Timestamp || post.date || new Date().toISOString()}
-                    likes={post.likes || 0}
-                    comments={post.comments || 0}
-                    shares={0}
-                    isLiked={post.isLiked || false}
-                    isBookmarked={post.isBookmarked || false}
-                    onLike={() => {}}
-                  >
-                    {post.preview && (
-                      <View style={styles.postVideoContainer}>
-                        <Text>Video Preview: {post.preview}</Text>
-                      </View>
-                    )}
-                  </UserPost>
-                ))}
-              </>
-            )}
-
-            {/* Events */}
-            {events.length > 0 && (
-              <>
-                <Text style={styles.sectionTitle}>Your Events</Text>
-                {events.map(event => (
-                  <UserPost
-                    key={event.id}
-                    id={event.id}
-                    user={{ id: String(event.id), name: event.title }}
-                    title={event.title}
-                    content={event.description}
-                    location={event.location}
-                    timestamp={event.date}
-                    likes={event.isJoined ? 1 : 0}
-                    comments={0}
-                    shares={0}
-                    isLiked={event.isJoined}
-                    isBookmarked={false}
-                    onLike={() => handleJoinEvent(event.id)}
-                  />
-                ))}
-              </>
-            )}
-
-            {/* Empty State */}
-            {backendPosts.length === 0 && events.length === 0 && (
-              <View style={styles.emptyStateContainer}>
-                <Text style={styles.emptyStateText}>No posts or events available in your community yet</Text>
-              </View>
-            )}
-          </>
-        );
-      } else {
-        // Campus Community tab shows events and firebase posts
-        return (
-          <>
-            {/* Events */}
-            {events.length > 0 && (
-              <>
-                <Text style={styles.sectionTitle}>Campus Events</Text>
-                {events.map(event => (
-                  <UserPost
-                    key={event.id}
-                    id={event.id}
-                    user={{ id: String(event.id), name: event.title }}
-                    title={event.title}
-                    content={event.description}
-                    location={event.location}
-                    timestamp={event.date}
-                    likes={event.isJoined ? 1 : 0}
-                    comments={0}
-                    shares={0}
-                    isLiked={event.isJoined}
-                    isBookmarked={false}
-                    onLike={() => handleJoinEvent(event.id)}
-                  />
-                ))}
-              </>
-            )}
-
-            {/* Firebase Posts */}
-            {firebasePosts.length > 0 && (
-              <>
-                <Text style={styles.sectionTitle}>Campus Posts</Text>
-                {firebasePosts.map(post => (
-                  <UserPost
-                    key={post.id}
-                    id={post.id}
-                    user={{ id: 'admin', name: post.author }}
-                    title={post.title}
-                    content={post.content}
-                    timestamp={post.date}
-                    likes={post.likes}
-                    comments={post.comments}
-                    shares={0}
-                    isLiked={post.isLiked}
-                    isBookmarked={false}
-                    onLike={() => handleLikePost(post.id)}
-                  />
-                ))}
-              </>
-            )}
-
-            {/* Empty State */}
-            {events.length === 0 && firebasePosts.length === 0 && (
-              <View style={styles.emptyStateContainer}>
-                <Text style={styles.emptyStateText}>No posts or events available in campus community yet</Text>
-              </View>
-            )}
-          </>
-        );
-      }
-    };
-
-    return (
-      <View style={styles.contentWrapper}>
-        {renderAnnouncement()}
-        <VideoSection activeTab={activeTab} />
-        {renderPosts()}
-      </View>
+    const renderEventItem = ({ item: event }: { item: Event }) => (
+      <UserPost
+        key={event.id}
+        id={event.id}
+        user={{ id: String(event.id), name: event.title }}
+        title={event.title}
+        content={event.description}
+        location={event.location}
+        timestamp={event.date}
+        likes={event.isJoined ? 1 : 0}
+        comments={0}
+        shares={0}
+        isLiked={event.isJoined}
+        isBookmarked={false}
+        onLike={() => handleJoinEvent(event.id)}
+      />
     );
+
+    const renderPostItem = ({ item: post, index }: { item: Post; index: number }) => (
+      <UserPost
+        key={`backend-${post.id || index}`}
+        id={post.id || `backend-${index}`}
+        user={{ id: post.user || 'username', name: post.user || 'Anonymous' }}
+        title={post.title || post.user || 'Anonymous'}
+        content={post.content || post.caption || ''}
+        location={post.location?.name || ''}
+        timestamp={post.Timestamp || post.date || new Date().toISOString()}
+        likes={post.likes || 0}
+        comments={post.comments || 0}
+        shares={0}
+        isLiked={post.isLiked || false}
+        isBookmarked={post.isBookmarked || false}
+        onLike={() => {}}
+      >
+        {post.preview && (
+          <View style={styles.postVideoContainer}>
+            <Text>Video Preview: {post.preview}</Text>
+          </View>
+        )}
+      </UserPost>
+    );
+
+    if (activeTab === 'your-community') {
+      return (
+        <>
+          {/* Backend Posts */}
+          {events.length > 0 && (
+            <>
+              <Text style={styles.sectionTitle}>Your Events</Text>
+              <FlatList
+                data={events}
+                renderItem={renderEventItem}
+                keyExtractor={(item) => `event-${item.id}`}
+                scrollEnabled={false}
+                ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
+              />
+            </>
+          )}
+          {backendPosts.length > 0 && (
+            <>
+              <Text style={styles.sectionTitle}>Your Posts</Text>
+              <FlatList
+                data={backendPosts}
+                renderItem={renderPostItem}
+                keyExtractor={(item, index) => `post-${item.id || index}`}
+                scrollEnabled={false}
+                ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
+              />
+            </>
+          )}
+
+          {/* Events */}
+          
+
+          {/* Empty State */}
+          {backendPosts.length === 0 && events.length === 0 && (
+            <View style={styles.emptyStateContainer}>
+              <Text style={styles.emptyStateText}>
+                No posts or events available in your community yet
+              </Text>
+            </View>
+          )}
+        </>
+      );
+    } else {
+      // Campus Community tab shows events and firebase posts
+      return (
+        <>
+          {/* Events */}
+          {events.length > 0 && (
+            <>
+              <Text style={styles.sectionTitle}>Campus Events</Text>
+              <FlatList
+                data={events}
+                renderItem={renderEventItem}
+                keyExtractor={(item) => `event-${item.id}`}
+                scrollEnabled={false}
+                ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
+              />
+            </>
+          )}
+        </>
+      );
+    }
   };
 
   return (
@@ -330,6 +307,15 @@ const Home: React.FC = () => {
       <CommunityTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
       <View style={styles.contentArea}>
+        {/* Announcement and Videos always shown */}
+        <View style={styles.announcementContainer}>
+          <FeaturedAnnouncement 
+            title="📢 Summer Vacation" 
+            description="class starting on Aug 19" 
+          />
+        </View>
+        <VideoSection activeTab={activeTab} />
+        {/* Posts/Events based on tab */}
         {renderContent()}
       </View>
     </ScrollView>
