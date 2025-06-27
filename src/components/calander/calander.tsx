@@ -3,7 +3,8 @@ import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform } from '
 import Icon from 'react-native-vector-icons/Feather';
 import { EventBannerCard } from './eventscards';
 import BottomNav from '../navigation/BottomNav';
-
+import TopNav from '../navigation/TopNav';
+import EventCard from '../EventCard';
 // Types
 type DateObject = { year: number; month: number; day: number };
 
@@ -126,49 +127,52 @@ const Calendar: React.FC<CalendarProps> = ({
     return days;
   };
 
-  return (
-    <View style={styles.container}>
-      <ScrollView style={styles.scrollView}>
-        <View style={styles.header}>
-          <Text style={styles.monthYear}>
-            {`${ENGLISH_MONTHS[monthInfo.month]} ${monthInfo.year}`}
-          </Text>
-          
-          <View style={styles.navArrows}>
-            <TouchableOpacity 
-              style={styles.navArrow} 
-              onPress={() => changeMonth(-1)}
-            >
-              <Icon name="chevron-left" size={24} color="white" />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.navArrow} 
-              onPress={() => changeMonth(1)}
-            >
-              <Icon name="chevron-right" size={24} color="white" />
-            </TouchableOpacity>
-          </View>
+ return (
+  <View style={styles.container}>
+    {/* Add TopNav component */}
+    <TopNav 
+      title={`${ENGLISH_MONTHS[monthInfo.month]} ${monthInfo.year}`}
+      rightAction={
+        <View style={styles.calendarNavButtons}>
+          <TouchableOpacity 
+            style={styles.navButton} 
+            onPress={() => changeMonth(-1)}
+          >
+            <Icon name="chevron-left" size={20} color="white" />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.navButton} 
+            onPress={() => changeMonth(1)}
+          >
+            <Icon name="chevron-right" size={20} color="white" />
+          </TouchableOpacity>
         </View>
-        
-        <View style={styles.weekdays}>
-          {ENGLISH_WEEKDAYS.map(day => (
-            <Text key={day} style={styles.weekdayText}>{day}</Text>
-          ))}
-        </View>
+      }
+    />
 
-        <View style={styles.daysGrid}>
-          {renderDays()}
-        </View>
+    <ScrollView style={styles.scrollView}>
+      {/* Removed the old header */}
+      
+      <View style={styles.weekdays}>
+        {ENGLISH_WEEKDAYS.map(day => (
+          <Text key={day} style={styles.weekdayText}>{day}</Text>
+        ))}
+      </View>
 
-        <EventBannerCard
-          image="https://source.unsplash.com/featured/?conference"
-          title="Tech Talk 2025"
-          date="May 10, 2025"
-          location="Austin, TX"
-        />
-      </ScrollView>
-    </View>
-  );
+      <View style={styles.daysGrid}>
+        {renderDays()}
+      </View>
+        <Text >Loading videos...</Text>
+
+      <EventBannerCard
+        image="https://source.unsplash.com/featured/?conference"
+        title="Tech Talk 2025"
+        date="May 10, 2025"
+        location="Austin, TX"
+      />
+    </ScrollView>
+  </View>
+);
 };
 
 const styles = StyleSheet.create({
@@ -191,16 +195,18 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    marginTop: 0, // Adjust based on TopNav height
   },
-  header: {
+  monthYearContainer: {
     backgroundColor: '#11182e',
     padding: 20,
     alignItems: 'center',
+    paddingTop: 40, // Extra padding to account for TopNav
   },
   monthYear: {
     color: 'white',
     fontSize: 24,
-    fontWeight: 'bold',//
+    fontWeight: 'bold',
     marginBottom: 8,
   },
   navArrows: {
@@ -237,7 +243,7 @@ const styles = StyleSheet.create({
   },
   calendarDay: {
     width: '14.28%',
-    aspectRatio: 1,
+    aspectRatio: 1.5,
     alignItems: 'center',
     justifyContent: 'center',
     padding: 4,
@@ -264,6 +270,23 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
+  calendarNavButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  navButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  // Modify these existing styles:
+ 
+
 });
 
 export default Calendar;

@@ -8,7 +8,7 @@ import { useEvents } from '../context/EventContext';
 import VideoSection from '../components/videos/VideoSection';
 import BottomNav from '../components/navigation/BottomNav';
 import UserPost from '../components/UserPost';
-
+  import { DEV_BASE_URL, PROD_BASE_URL } from '@env';
 
 
 // Define the navigation type
@@ -53,6 +53,7 @@ interface Post {
   preview?: string;
 }
 
+
 const Home: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { events: initialEvents } = useEvents();
@@ -64,29 +65,34 @@ const Home: React.FC = () => {
   const [backendPosts, setBackendPosts] = useState<Post[]>([]);
   const [featuredVideos, setFeaturedVideos] = useState<any[]>([]);
 
-  const getFromBackend = async () => {
-    const BASE_URL = __DEV__
-      ? "http://localhost:8000/"
-      : "https://api.sapana.xyz/";
-  
-    try {
-      const homeResponse = await axios.get(`${BASE_URL}home/`, {
-        withCredentials: true,
-      });
 
-      const videosResponse = await axios.get(`${BASE_URL}videos/`, {
-        withCredentials: true,
-      });
 
-      return {
-        home: homeResponse.data,
-        videos: videosResponse.data,
-      };
-    } catch (error) {
-      console.error('Error fetching from backend:', error);
-      return {};
-    }
-  };
+
+
+
+
+const getFromBackend = async () => {
+  const BASE_URL = __DEV__ ? DEV_BASE_URL : PROD_BASE_URL;
+
+  try {
+    const homeResponse = await axios.get(`${BASE_URL}home/`, {
+      withCredentials: true,
+    });
+
+    const videosResponse = await axios.get(`${BASE_URL}videos/`, {
+      withCredentials: true,
+    });
+
+    return {
+      home: homeResponse.data,
+      videos: videosResponse.data,
+    };
+  } catch (error) {
+    console.error('Error fetching from backend:', error);
+    return {};
+  }
+};
+
 
   useEffect(() => {
     const fetchBackendData = async () => {
@@ -290,7 +296,7 @@ const Home: React.FC = () => {
             <View style={styles.logoCircle}>
               <Text style={{ color: '#DC143C', fontWeight: 'bold' }}>NS</Text>
             </View>
-            <Text style={styles.welcomeText}>Nepali Student Hub</Text>
+            <Text style={styles.welcomeText}>Icamp</Text>
           </View>
 
           <TouchableOpacity 

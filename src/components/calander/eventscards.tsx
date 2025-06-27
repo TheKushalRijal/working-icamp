@@ -84,12 +84,15 @@ const EventList: React.FC = () => {
     const loadEvents = async () => {
       try {
         const response = await fetch('https://api.dreamnepal.xyz/events');
+        console.log('Using default events after API failure');
+
+
+        
         if (response.ok) {
           const data = await response.json();
           setEvents(data);
         }
       } catch (error) {
-        console.log('Using default events after API failure');
       }
     };
 

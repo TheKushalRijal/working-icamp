@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, Image, TouchableOpacity, FlatList, StyleSheet, Linking, ScrollView } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import Feather from 'react-native-vector-icons/Feather';
+import TopNav from '../components/navigation/TopNav';
+
 
 const UTAHousingApp = () => {
   const [posts, setPosts] = useState([]);
@@ -125,19 +127,18 @@ const UTAHousingApp = () => {
   return (
     <View style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <View>
-          <Text style={styles.title}>UTA Housing Options</Text>
-          <Text style={styles.subtitle}>Find your perfect student accommodation</Text>
-        </View>
-        <TouchableOpacity
-          onPress={() => setShowFilters(!showFilters)}
-          style={styles.filterButton}
-        >
-          <Feather name={showFilters ? "x" : "filter"} size={18} color="#fff" />
-          <Text style={styles.filterButtonText}>Filters</Text>
-        </TouchableOpacity>
-      </View>
+      <TopNav 
+  title="UTA Housing Options" 
+  rightAction={
+    <TouchableOpacity
+      onPress={() => setShowFilters(!showFilters)}
+      style={styles.filterButton}
+    >
+      <Feather name={showFilters ? "x" : "filter"} size={18} color="#fff" />
+      <Text style={styles.filterButtonText}>Filters</Text>
+    </TouchableOpacity>
+  }
+/>
 
       <View style={styles.mainContent}>
         {/* Search bar */}
@@ -209,15 +210,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#F3F4F6', // Tailwind gray-100
   },
-  header: {
-    backgroundColor: '#fff',
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    elevation: 2,
-  },
+ 
   title: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -227,23 +220,25 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#4B5563', // gray-600
   },
-  filterButton: {
-    flexDirection: 'row',
-    backgroundColor: '#2563EB', // blue-600
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: 6,
-    alignItems: 'center',
-  },
-  filterButtonText: {
-    color: '#fff',
-    marginLeft: 6,
-    fontWeight: '600',
-  },
-  mainContent: {
-    flex: 1,
-    padding: 16,
-  },
+ filterButton: {
+  flexDirection: 'row',       // Keeps icon and text in a row
+  backgroundColor: '#2563EB', // blue-600
+  paddingVertical: 8,         // Fixed vertical padding
+  paddingHorizontal: 12,      // Horizontal padding
+  borderRadius: 6,
+  alignItems: 'center',       // Centers vertically
+  justifyContent: 'center',   // Centers horizontally
+  height: 36,                 // Fixed height (optional)
+  minWidth: 80,               // Minimum width (optional)
+},
+filterButtonText: {
+  color: '#fff',
+  marginLeft: 6,              // Space between icon and text
+  fontWeight: '600',
+  fontSize: 14,
+  includeFontPadding: false,  // Removes extra text padding
+},
+  
   searchInput: {
     backgroundColor: '#fff',
     borderRadius: 6,
@@ -353,6 +348,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#6B7280', // gray-500
   },
+  mainContent: {
+    flex: 1,
+    padding: 16,
+    paddingTop: 0,},
+    
   noResultsSubtitle: {
     marginTop: 4,
     color: '#9CA3AF', // gray-400
