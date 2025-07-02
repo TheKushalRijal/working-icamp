@@ -76,7 +76,7 @@ const Register: React.FC = () => {
 
     try {
       // No CSRF token in React Native normally. Adjust backend for tokenless or JWT.
-      const response = await axios.post('https://api.sapana.xyz/register_user/', formData, {
+      const response = await axios.post('http://10.0.2.2:8000/register_user/', formData, {
         headers: { 'Content-Type': 'application/json' },
       });
 
@@ -128,7 +128,7 @@ const Register: React.FC = () => {
 
     try {
       const response = await axios.post(
-        'https://api.sapana.xyz/verify_code/',
+        'http://10.0.2.2:8000/verify_code/',
         { email: formData.email, code },
         {
           headers: { 'Content-Type': 'application/json' },
@@ -146,7 +146,8 @@ const Register: React.FC = () => {
         setVerificationError('Invalid verification code. Please try again.');
       }
     } catch (error: any) {
-      console.error(error);
+      console.log(error);
+      
       setVerificationError(
         axios.isAxiosError(error) && error.response?.data?.message
           ? error.response.data.message

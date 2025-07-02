@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 //import { Feather as Icon } from '@expo/vector-icons';
 import Icon from 'react-native-vector-icons/Feather';
+import TopNav from '../../components/navigation/TopNav';
 
 const VisaPage = () => {
   const [activeTab, setActiveTab] = useState<'f1' | 'duration' | 'renewal'>('f1');
@@ -48,14 +49,16 @@ const VisaPage = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      {/* Top Navigation Bar */}
+      <TopNav title="Visa Information" />
       <ScrollView contentContainerStyle={styles.container}>
         {/* Header */}
-        <View style={styles.header}>
+        {/* <View style={styles.header}>
           <View>
             <Text style={styles.title}>Visa Information</Text>
             <Text style={styles.subtitle}>Guidance for Nepali students</Text>
           </View>
-        </View>
+        </View> */}
 
         {/* Mobile Tabs */}
         {Platform.OS === 'web' ? (

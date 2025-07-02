@@ -1,13 +1,34 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, SafeAreaView } from 'react-native';
-//import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+// RidersApp.js
+import React, { useState } from 'react';
+
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  ScrollView,
+  SafeAreaView,
+  TextInput,
+  Alert,
+} from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import TopNav from '../components/TopNav';
-import BottomNav from '../components/navigation/BottomNav';
+import axios from 'axios';
+import { DEV_BASE_URL } from '@env';
+import { useNavigation } from '@react-navigation/native';
+
+import HomeStack from '../components/navigation/MainStack';
+import TopNav from '../components/navigation/TopNav';
 
 
 const RidersApp = () => {
+const navigation = useNavigation();
+
+ const [showForm, setShowForm] = useState(false);
+const [pickupLocation, setPickupLocation] = useState('');
+const [dropLocation, setDropLocation] = useState('');
+
   const nearbyLocations = [
     { from: 'University Center', to: 'College Park', distance: '1.2 mi', available: true },
     { from: 'Central Library', to: 'Engineering Research', distance: '0.8 mi', available: false },
@@ -15,38 +36,122 @@ const RidersApp = () => {
     { from: 'The Commons', to: 'Fine Arts Building', distance: '0.6 mi', available: true },
   ];
 
+  const getDistance = async () => {
+    try {
+      const res = await axios.get(`${DEV_BASE_URL}distance/`, {
+        withCredentials: true,
+      });
+      return { distancedata: res.data };
+    } catch (error) {
+      console.error('Error fetching from backend:', error);
+      return {};
+    }
+  };
+
+  const getStaticMapUrl = () => {
+    const apiKey = 'YOUR_GOOGLE_MAPS_STATIC_API_KEY'; // Replace before production
+    const center = 'University+of+Texas+Arlington';
+    const zoom = 15;
+    const size = '800x400';
+    const markers = `color:red%7C${center}`;
+    return `https://maps.googleapis.com/maps/api/staticmap?center=${center}&zoom=${zoom}&size=${size}&maptype=roadmap&markers=${markers}&key=${apiKey}`;
+  };
+
+ const handleRequestRide = async () => {
+  if (!pickupLocation || !dropLocation) {
+    Alert.alert('Please fill in both Pickup and Drop locations.');
+    return;
+  }
+
+  try {
+    const response = await axios.post(`${DEV_BASE_URL}requestride/`, {
+      pickup: pickupLocation,
+      drop: dropLocation,
+    }, {
+      withCredentials: true,
+    });
+
+    Alert.alert('Ride Requested Successfully');
+    setShowForm(false);
+    setPickupLocation('');
+    setDropLocation('');
+  } catch (error) {
+    console.error('Error requesting ride:', error);
+    Alert.alert('Failed to request ride. Try again.');
+  }
+
+};
+
+
   return (
     <SafeAreaView style={styles.safeArea}>
-
+      {/* Top Navigation Bar */}
+      <TopNav title="Ride Help" />
       <ScrollView style={styles.container} contentContainerStyle={styles.contentContainer}>
-        {/* Header Section */}
-        <View style={styles.header}>
-          <Text style={styles.title}>RIde Help</Text>
+        {/* Header */}
+        {/* <View style={styles.header}>
+          <Text style={styles.title}>Ride Help</Text>
           <TouchableOpacity style={styles.addButton}>
             <Ionicons name="add-circle" size={32} color="#4A90E2" />
           </TouchableOpacity>
-        </View>
+        </View> */}
 
+        {/* Warning */}
         <View style={styles.warningContainer}>
           <MaterialIcons name="warning" size={16} color="#FF6B6B" />
           <Text style={styles.warningText}>
-            Use of this app is forbidden for commercial income purpose. For UTA students only.
+            Use of this app is forbidden for commercial income purposes. For UTA students only.
           </Text>
         </View>
 
-        {/* Map Section */}
+        {/* Input Fields */}
+      <View style={styles.formContainer}>
+  {!showForm ? (
+    <TouchableOpacity
+      style={styles.initialButton}
+      onPress={() => setShowForm(true)}
+    >
+      <Text style={styles.initialButtonText}>Request a New Ride</Text>
+    </TouchableOpacity>
+  ) : (
+    <>
+      <Text style={styles.label}>Pickup Location</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Enter pickup location"
+        value={pickupLocation}
+        onChangeText={setPickupLocation}
+      />
+
+      <Text style={styles.label}>Drop Location</Text>
+      <TextInput
+        style={styles.input}
+        placeholder="Enter drop location"
+        value={dropLocation}
+        onChangeText={setDropLocation}
+      />
+
+      <TouchableOpacity style={styles.requestButton} onPress={handleRequestRide}>
+        <Text style={styles.requestButtonText}>Request Ride</Text>
+      </TouchableOpacity>
+    </>
+  )}
+</View>
+
+
+        {/* Static Map */}
         <View style={styles.mapContainer}>
           <Image
-            source={{ uri: 'https://maps.googleapis.com/maps/api/staticmap?center=University+of+Texas+Arlington&zoom=15&size=800x400&maptype=roadmap&markers=color:red%7CUniversity+of+Texas+Arlington&key=YOUR_API_KEY' }}
+            source={{ uri: getStaticMapUrl() }}
             style={styles.mapImage}
             resizeMode="cover"
+            onError={(e) => console.log('Map image error:', e.nativeEvent.error)}
           />
-          
         </View>
 
-        {/* Nearby Locations Section */}
+        {/* Nearby Requests */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.subheading}>Recent Request</Text>
+          <Text style={styles.subheading}>Recent Requests</Text>
           <TouchableOpacity>
             <Text style={styles.seeAllText}>See all</Text>
           </TouchableOpacity>
@@ -63,9 +168,7 @@ const RidersApp = () => {
                   <Text style={styles.routeText}>
                     {location.from} to {location.to}
                   </Text>
-                  <Text style={styles.distanceText}>
-                    {location.distance} away from here
-                  </Text>
+                  <Text style={styles.distanceText}>{location.distance} away from here</Text>
                 </View>
               </View>
               {location.available && (
@@ -77,13 +180,17 @@ const RidersApp = () => {
           ))}
         </View>
 
+        {/* Privacy */}
         <TouchableOpacity style={styles.privacyButton}>
           <Text style={styles.privacyText}>Privacy Policy</Text>
         </TouchableOpacity>
-      </ScrollView>
 
+      </ScrollView>
     </SafeAreaView>
+
+
   );
+
 };
 
 const styles = StyleSheet.create({
@@ -128,26 +235,54 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     flex: 1,
   },
-  mapContainer: {
-  height: 500, // or whatever taller height you want
-  borderRadius: 5,
-  overflow: 'hidden',
-  marginBottom: 20,
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.1,
-  shadowRadius: 4,
-  elevation: 3,
-},
-mapImage: {
-  width: '100%',
-  height: '100%', // match container height
-},
-
-  mapOverlayText: {
-    color: 'white',
-    fontSize: 12,
+  formContainer: {
+    backgroundColor: '#ffffff',
+    padding: 16,
+    borderRadius: 10,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  label: {
+    fontSize: 14,
     fontWeight: '600',
+    marginBottom: 6,
+    color: '#333',
+  },
+  input: {
+    height: 48,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    marginBottom: 16,
+    backgroundColor: '#fff',
+  },
+  requestButton: {
+    backgroundColor: '#4A90E2',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  requestButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  mapContainer: {
+    height: 250,
+    borderRadius: 12,
+    overflow: 'hidden',
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  mapImage: {
+    width: '100%',
+    height: '100%',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -168,24 +303,24 @@ mapImage: {
   locationsList: {
     marginBottom: 20,
   },
-   locationCard: {
-  backgroundColor: '#fff',
-  borderRadius: 10,
-  paddingVertical: 10,
-  paddingHorizontal: 14,
-  marginBottom: 10,
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  shadowColor: '#000',
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.08,
-  shadowRadius: 4,
-  elevation: 2, // Slightly higher for Android depth
-  borderWidth: 0.3,
-  borderColor: '#e0e0e0',
-  minHeight: 60,
-},
+  locationCard: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    marginBottom: 10,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 0.3,
+    borderColor: '#e0e0e0',
+    minHeight: 60,
+  },
   locationInfo: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -194,6 +329,18 @@ mapImage: {
   locationPin: {
     marginRight: 12,
   },
+  initialButton: {
+  backgroundColor: '#4A90E2',
+  paddingVertical: 12,
+  borderRadius: 8,
+  alignItems: 'center',
+},
+initialButtonText: {
+  color: 'white',
+  fontSize: 16,
+  fontWeight: '600',
+},
+
   routeText: {
     fontSize: 14,
     fontWeight: '600',
@@ -217,13 +364,42 @@ mapImage: {
   },
   privacyButton: {
     alignSelf: 'center',
-    marginTop: -15,
+    marginTop: 10,
   },
   privacyText: {
     color: 'black',
     fontSize: 13,
     textDecorationLine: 'underline',
   },
+  popup: {
+  backgroundColor: '#fff',
+  padding: 20,
+  borderRadius: 10,
+  alignItems: 'center',
+  shadowColor: '#000',
+  shadowOpacity: 0.1,
+  shadowRadius: 10,
+  elevation: 5,
+},
+popupTitle: {
+  fontSize: 18,
+  fontWeight: '700',
+  marginBottom: 20,
+  color: '#333',
+  textAlign: 'center',
+},
+popupButton: {
+  backgroundColor: '#4A90E2',
+  paddingHorizontal: 20,
+  paddingVertical: 10,
+  borderRadius: 8,
+},
+popupButtonText: {
+  color: 'white',
+  fontSize: 16,
+  fontWeight: '600',
+},
+
 });
 
 export default RidersApp;

@@ -15,8 +15,7 @@ export default function HomeStack() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="HomeMain" component={Home} />
-    <Stack.Screen name="Rides" component={RidersApp} />
-
+      <Stack.Screen name="Rides" component={RidersApp} />
       <Stack.Screen name="UploadPost" component={UploadPost} />
       <Stack.Screen name="Personal" component={PersonalInfoPage} />
       <Stack.Screen name="Resources" component={Resources} />

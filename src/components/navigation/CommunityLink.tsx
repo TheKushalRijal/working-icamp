@@ -8,13 +8,13 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
-
+import RidersApp from '../../rideshare/rideshare';
 const CommunityLinks: React.FC = () => {
   const navigation = useNavigation<any>(); // Add typing if you have defined your navigation types
 
   const links = [
-    { name: 'Ride Share', icon: 'home', route: 'rideshare' },
-    { name: 'Events', icon: 'calendar', route: 'Events' },
+    { name: 'Ride Share', icon: 'home', route: 'RidersApp' },
+    { name: 'Login', icon: '', route: 'Login' },
     { name: 'Housing', icon: 'home', route: 'Housing' },
     { name: 'Jobs', icon: 'briefcase', route: 'Jobs' },
     { name: 'Marketplace', icon: 'shopping-bag', route: 'Marketplace' },

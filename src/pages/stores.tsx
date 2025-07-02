@@ -9,12 +9,14 @@ import {
   TouchableOpacity, 
   ActivityIndicator,
   FlatList,
-  Dimensions
+  Dimensions,
+  Animated
 } from 'react-native';
 //import { MaterialIcons, FontAwesome, FontAwesome5 } from '@expo/vector-icons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import TopNav from '../components/navigation/TopNav';
 
 interface Store {
   id: number;
@@ -38,6 +40,14 @@ const StoresNearMe = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [sortOption, setSortOption] = useState<string>('distance');
   const [currentLocation, setCurrentLocation] = useState<string>('');
+
+  // Animated value for scroll
+  const scrollY = React.useRef(new Animated.Value(0)).current;
+  const headerTranslateY = scrollY.interpolate({
+    inputRange: [0, 80],
+    outputRange: [0, -80],
+    extrapolate: 'clamp',
+  });
 
   useEffect(() => {
     const fetchStores = async () => {
@@ -227,19 +237,29 @@ const StoresNearMe = () => {
 
   return (
     <View style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <View style={styles.header}>
+      {/* Top Navigation Bar */}
+      <TopNav
+        title={
           <View>
-            <Text style={styles.title}>Just The Nepali Vibes</Text>
-            {currentLocation && (
-              <View style={styles.locationRow}>
-                <MaterialIcons name="location-on" size={16} color="#6b7280" />
-                <Text style={styles.locationText}>{currentLocation}</Text>
-              </View>
-            )}
+            <Text style={{ color: 'white', fontSize: 20, fontWeight: 'bold' }}>Just The Nepali Vibes</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+              <MaterialIcons name="location-on" size={14} color="#b0b0b0" />
+              <Text style={{ color: '#b0b0b0', fontSize: 13, marginLeft: 2 }}>
+                {currentLocation || 'Arlington, Texas'}
+              </Text>
+            </View>
           </View>
-        </View>
-        
+        }
+        animatedStyle={{ transform: [{ translateY: headerTranslateY }] }}
+      />
+      <Animated.ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        scrollEventThrottle={16}
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: true }
+        )}
+      >
         <View style={styles.searchContainer}>
           <View style={styles.searchInputContainer}>
             <MaterialIcons name="search" size={20} color="#9ca3af" style={styles.searchIcon} />
@@ -280,7 +300,7 @@ const StoresNearMe = () => {
             contentContainerStyle={styles.storesList}
           />
         )}
-      </ScrollView>
+      </Animated.ScrollView>
     </View>
   );
 };
@@ -292,27 +312,6 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     padding: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 24,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#111827',
-  },
-  locationRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  locationText: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginLeft: 4,
   },
   searchContainer: {
     backgroundColor: 'white',

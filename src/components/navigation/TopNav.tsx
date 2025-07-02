@@ -1,40 +1,42 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 
 interface TopNavProps {
-  title?: string;
-  showBackButton?: boolean;
+  title?: React.ReactNode;
   rightAction?: React.ReactNode;
+  animatedStyle?: any;
 }
 
 const TopNav: React.FC<TopNavProps> = ({ 
   title = 'Nepali Student Hub', 
-  showBackButton = false,
-  rightAction 
+  rightAction,
+  animatedStyle
 }) => {
   const navigation = useNavigation();
 
   return (
-    <View style={styles.header}>
+    <Animated.View style={[styles.header, animatedStyle]}>
       <View style={styles.navContent}>
-        {showBackButton && (
+        <View style={styles.leftGroup}>
           <TouchableOpacity 
             onPress={() => navigation.goBack()}
             style={styles.backButton}
           >
             <Icon name="chevron-left" size={24} color="white" />
           </TouchableOpacity>
-        )}
-
-        <Text style={styles.title}>{title}</Text>
-
+          {typeof title === 'string' ? (
+            <Text style={styles.title}>{title}</Text>
+          ) : (
+            <View style={styles.title}>{title}</View>
+          )}
+        </View>
         <View style={styles.rightActionContainer}>
           {rightAction || <View style={{ width: 24 }} />}
         </View>
       </View>
-    </View>
+    </Animated.View>
   );
 };
 
@@ -51,18 +53,22 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginLeft: -110,  // This will shift everything slightly left
   },
   backButton: {
     padding: 8,
     marginRight: 8,
   },
+  leftGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
   title: {
     color: 'white',
     fontSize: 20,
     fontWeight: 'bold',
-    flex: 1,
-    textAlign: 'center',
+    textAlign: 'left',
+    marginLeft: 4,
   },
   rightActionContainer: {
     width: 40,

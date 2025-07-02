@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import FeatherIcon from 'react-native-vector-icons/Feather';
+import TopNav from '../../components/navigation/TopNav';
 
 interface Resource {
   icon: string;
@@ -57,9 +58,11 @@ const UniversityResourcesPage = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
+      {/* Top Navigation Bar */}
+      <TopNav title="University Resources" showBackButton={true} />
+      {/* <View style={styles.header}>
         <Text style={styles.headerTitle}>University Resources</Text>
-      </View>
+      </View> */}
 
       <ScrollView style={styles.scrollView}>
         <Text style={styles.intro}>
