@@ -53,7 +53,7 @@ interface ProfileData {
 
 // Default hardcoded data
 const DEFAULT_PROFILE_DATA: ProfileData = {
-  profilePic: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=200&q=80',
+  profilePic: 'https://r1.ilikewallpaper.net/iphone-x-wallpapers/download/78885/kratos-on-thrones-iphone-x-wallpaper-ilikewallpaper_com.jpg',
   fullName: 'Your Name',
   university: 'University of Texas',
   years: 3,

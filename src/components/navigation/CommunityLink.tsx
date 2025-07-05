@@ -13,7 +13,9 @@ const CommunityLinks: React.FC = () => {
   const navigation = useNavigation<any>(); // Add typing if you have defined your navigation types
 
   const links = [
-    { name: 'Ride Share', icon: 'home', route: 'RidersApp' },
+    { name: 'Ride Share', icon: 'home', route: 'Rides' },
+   // <Tab.Screen name="Rides" component={RidersApp} />
+
     { name: 'Login', icon: '', route: 'Login' },
     { name: 'Housing', icon: 'home', route: 'Housing' },
     { name: 'Jobs', icon: 'briefcase', route: 'Jobs' },

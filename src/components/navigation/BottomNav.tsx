@@ -50,7 +50,6 @@ const BottomNav = () => {
 >
   <Tab.Screen name="Home" component={HomeStack} />
   <Tab.Screen name="Events" component={NepaliCalendar} />
-  <Tab.Screen name="Rides" component={RidersApp} />
   <Tab.Screen name="Places" component={StoresNearMe} />
   <Tab.Screen name="Housings" component={Housings} />
   <Tab.Screen name="Profile" component={ProfilePage} />
