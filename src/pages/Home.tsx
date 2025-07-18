@@ -87,7 +87,8 @@ const getFromBackend = async () => {
     const videosResponse = await axios.get(`${BASE_URL}/videos/`, {
    //   withCredentials: true,
     });
-    console.log(videosResponse.data)
+    console.log("Home Data:", homeResponse.data);
+    console.log("Videos Data:", videosResponse.data);
 
   
 
@@ -127,7 +128,7 @@ const allgetFromBackend = async () => {
 
 
 useEffect(() => {
-  const fetchBackendData = async () => {
+  const fetchBackendData = async () => {// check here 
     const { home, videos } = await getFromBackend();
     console.log('Backend data received:', { home, videos });
     
@@ -351,7 +352,10 @@ useEffect(() => {
 
       <CommunityTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <View style={styles.contentArea}>
+  {/* Announcement and Videos always shown */}
+  <View style={styles.contentArea}>
+  {/* Announcement and Videos always shown */}
+  <View style={styles.contentArea}>
   {/* Announcement and Videos always shown */}
   <View style={styles.announcementContainer}>
     {announcementLoading ? (
@@ -365,6 +369,19 @@ useEffect(() => {
       <Text>No announcements available</Text>
     )}
   </View>
+
+  <VideoSection activeTab={activeTab} />
+  
+  {/* Posts/Events based on tab */}
+  {renderContent()}
+</View>
+
+
+  
+
+
+
+
 
   <VideoSection activeTab={activeTab} />
   

@@ -84,34 +84,17 @@ const VideoSection: React.FC<VideoSectionProps> = ({ activeTab, videos: propVide
       try {
         setLoading(true);
         const BASE_URL = DEV_BASE_URL;
-          
-
         const response = await axios.get(`${BASE_URL}/videos/`, {
-         // withCredentials: true,
+          // withCredentials: true,
           timeout: 1000
         });
-        console.log(response.data)
-
-         const communityresponse = await axios.get(`${BASE_URL}videos/community/`, {
-         // withCredentials: true,
-          timeout: 1000
-        });
-        console.log(response.data)
-
+        console.log(response.data);
         if (response.data && Array.isArray(response.data)) {
           const filteredVideos = getFilteredVideos(response.data);
           if (filteredVideos.length > 0) {
             setVideos(filteredVideos);
           }
         }
-console.log(response.data)
- if (communityresponse.data && Array.isArray(response.data)) {
-          const filteredVideos = getFilteredVideos(response.data);
-          if (filteredVideos.length > 0) {
-            setVideos(filteredVideos);
-          }
-        }
-
       } catch (error) {
         console.log('Using sample videos (backend unavailable)');
         setVideos(sampleVideos);
@@ -119,9 +102,32 @@ console.log(response.data)
         setLoading(false);
       }
     };
-
     fetchVideos();
   }, [activeTab, propVideos]);
+
+  // Function to fetch community videos (to be used later on click)
+  const fetchCommunityVideos = async () => {
+    try {
+      setLoading(true);
+      const BASE_URL = DEV_BASE_URL;
+      const communityresponse = await axios.get(`${BASE_URL}/videos/community/`, {
+        // withCredentials: true,
+        timeout: 1000
+      });
+      console.log(communityresponse.data);
+      if (communityresponse.data && Array.isArray(communityresponse.data)) {
+        const filteredVideos = getFilteredVideos(communityresponse.data);
+        if (filteredVideos.length > 0) {
+          setVideos(filteredVideos);
+        }
+      }
+    } catch (error) {
+      console.log('Using sample videos (backend unavailable)');
+      setVideos(sampleVideos);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   if (loading) {
     return (
