@@ -45,7 +45,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#11182e', // Dark background
     borderBottomWidth: 3,
     borderBottomColor: '#dc143c',
-    paddingTop: 70, // Adjust for status bar
+    paddingTop: 30, // Adjust for status bar
     paddingBottom: 15,
     paddingHorizontal: 16,
   },

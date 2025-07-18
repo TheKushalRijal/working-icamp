@@ -17,6 +17,8 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
 import TopNav from '../components/navigation/TopNav';
+import axios from 'axios';
+import { DEV_BASE_URL, PROD_BASE_URL } from '@env';
 
 interface Store {
   id: number;
@@ -49,98 +51,134 @@ const StoresNearMe = () => {
     extrapolate: 'clamp',
   });
 
+  // Hardcoded fallback stores data
+  const hardcodedStores: Store[] = [
+    {
+      id: 0,
+      name: 'Nepali mandir/ Nepali society of texas',
+      image: 'https://lh3.googleusercontent.com/p/AF1QipP-eD1EgjBl1WF86n-QPTFrKOerpS23_pvlSBbk=w143-h143-n-k-no',
+      location: '1212 Royal Pkwy, Euless, TX 76040',
+      distance: '0.5 miles',
+      rating: 4.5,
+      reviewCount: 124,
+      categories: ['Nepali Mandir', 'Nepali society'],
+      openStatus: 'Open now',
+      phone: '(555) 123-4567',
+      hours: 'Mon-Fri: 8AM-9PM, Sat-Sun: 9AM-8PM',
+      featured: true
+    },
+    {
+      id: 1,
+      name: 'Corner Stone',
+      image: 'https://lh3.googleusercontent.com/p/AF1QipN0S1kPVh486_BdprFHkL-bNmteWhXwq2HfySB6=s1360-w1360-h1020',
+      location: '312 College St, Arlington, TX 76010',
+      distance: '0.5 miles',
+      rating: 4.5,
+      reviewCount: 124,
+      categories: ['Free Coffee', 'Festival celebration'],
+      openStatus: 'Open now',
+      phone: '(555) 123-4567',
+      hours: 'Mon-Fri: 8AM-9PM, Sat-Sun: 9AM-8PM',
+      featured: true
+    },
+    {
+      id: 2,
+      name: 'Taipo',
+      image: 'https://lh3.googleusercontent.com/p/AF1QipOB1z4QvEEkk6otpY2h_TSZMYsOEB73HUPzonJ1=w408-h297-k-no',
+      location: '200 E Abram St Suite 140, Arlington TX 76010',
+      distance: '0.5 miles',
+      rating: 4.2,
+      reviewCount: 89,
+      categories: ['Nepali Restuarent', 'Foods'],
+      openStatus: 'Open now',
+      phone: '(555) 987-6543',
+      hours: 'Mon-Sun: 7AM-10PM'
+    },
+    {
+      id: 3,
+      name: 'Royal Texas nepali grill',
+      image: 'https://lh3.googleusercontent.com/p/AF1QipP_va-c3te6J4yQC1rf6_XGjVL0F_aovDlImFkP=w408-h724-k-no',
+      location: '789 Elm Blvd, Dallas, TX',
+      distance: '2.3 miles',
+      rating: 4.8,
+      reviewCount: 215,
+      categories: ['Nepali foods'],
+      openStatus: 'Closes at 8PM',
+      phone: '(555) 456-7890',
+      hours: 'Mon-Sat: 7AM-8PM, Sun: 8AM-7PM'
+    },
+    {
+      id: 4,
+      name: 'Cafe Everest',
+      image: 'https://lh3.googleusercontent.com/p/AF1QipMs8g-kIE8FcGdQPg-Tn9OxFjwEax3xjCp33-IS=w426-h240-k-no',
+      location: '3901 W Arkansas Ln #107A, Arlington, TX 76016',
+      distance: '3.1 miles',
+      rating: 3.9,
+      reviewCount: 42,
+      categories: ['Nepali food'],
+      openStatus: 'Closed - Opens at 7AM',
+      phone: '(555) 789-0123',
+      hours: 'Mon-Fri: 7AM-7PM, Sat: 8AM-5PM'
+    },
+    {
+      id: 5,
+      name: 'Deshi Store',
+      image: 'https://lh3.googleusercontent.com/p/AF1QipNA89KlfXE0Lr3GfqdZIENKrssa9ww61dRNZZQA=w408-h306-k-no',
+      location: '1215 S Cooper St, Arlington, TX 76010',
+      distance: '3.1 miles',
+      rating: 3.9,
+      reviewCount: 42,
+      categories: ['Asian items','indian store'],
+      openStatus: 'Closed - Opens at 7AM',
+      phone: '(555) 789-0123',
+      hours: 'Mon-Fri: 7AM-7PM, Sat: 8AM-5PM'
+    },
+  ];
+
   useEffect(() => {
     const fetchStores = async () => {
       setIsLoading(true);
+      const BASE_URL = __DEV__ ? DEV_BASE_URL : PROD_BASE_URL;
+      
       try {
-        const fetchedStores: Store[] = [
-          {
-            id: 0,
-            name: 'Nepali mandir/ Nepali society of texas',
-            image: 'https://lh3.googleusercontent.com/p/AF1QipP-eD1EgjBl1WF86n-QPTFrKOerpS23_pvlSBbk=w143-h143-n-k-no',
-            location: '1212 Royal Pkwy, Euless, TX 76040',
-            distance: '0.5 miles',
-            rating: 4.5,
-            reviewCount: 124,
-            categories: ['Nepali Mandir', 'Nepali society'],
-            openStatus: 'Open now',
-            phone: '(555) 123-4567',
-            hours: 'Mon-Fri: 8AM-9PM, Sat-Sun: 9AM-8PM',
-            featured: true
-          },
-          {
-            id: 1,
-            name: 'Corner Stone',
-            image: 'https://lh3.googleusercontent.com/p/AF1QipN0S1kPVh486_BdprFHkL-bNmteWhXwq2HfySB6=s1360-w1360-h1020',
-            location: '312 College St, Arlington, TX 76010',
-            distance: '0.5 miles',
-            rating: 4.5,
-            reviewCount: 124,
-            categories: ['Free Coffee', 'Festival celebration'],
-            openStatus: 'Open now',
-            phone: '(555) 123-4567',
-            hours: 'Mon-Fri: 8AM-9PM, Sat-Sun: 9AM-8PM',
-            featured: true
-          },
-          {
-            id: 2,
-            name: 'Taipo',
-            image: 'https://lh3.googleusercontent.com/p/AF1QipOB1z4QvEEkk6otpY2h_TSZMYsOEB73HUPzonJ1=w408-h297-k-no',
-            location: '200 E Abram St Suite 140, Arlington TX 76010',
-            distance: '0.5 miles',
-            rating: 4.2,
-            reviewCount: 89,
-            categories: ['Nepali Restuarent', 'Foods'],
-            openStatus: 'Open now',
-            phone: '(555) 987-6543',
-            hours: 'Mon-Sun: 7AM-10PM'
-          },
-          {
-            id: 3,
-            name: 'Royal Texas nepali grill',
-            image: 'https://lh3.googleusercontent.com/p/AF1QipP_va-c3te6J4yQC1rf6_XGjVL0F_aovDlImFkP=w408-h724-k-no',
-            location: '789 Elm Blvd, Dallas, TX',
-            distance: '2.3 miles',
-            rating: 4.8,
-            reviewCount: 215,
-            categories: ['Nepali foods'],
-            openStatus: 'Closes at 8PM',
-            phone: '(555) 456-7890',
-            hours: 'Mon-Sat: 7AM-8PM, Sun: 8AM-7PM'
-          },
-          {
-            id: 4,
-            name: 'Cafe Everest',
-            image: 'https://lh3.googleusercontent.com/p/AF1QipMs8g-kIE8FcGdQPg-Tn9OxFjwEax3xjCp33-IS=w426-h240-k-no',
-            location: '3901 W Arkansas Ln #107A, Arlington, TX 76016',
-            distance: '3.1 miles',
-            rating: 3.9,
-            reviewCount: 42,
-            categories: ['Nepali food'],
-            openStatus: 'Closed - Opens at 7AM',
-            phone: '(555) 789-0123',
-            hours: 'Mon-Fri: 7AM-7PM, Sat: 8AM-5PM'
-          },
-          {
-            id: 5,
-            name: 'Deshi Store',
-            image: 'https://lh3.googleusercontent.com/p/AF1QipNA89KlfXE0Lr3GfqdZIENKrssa9ww61dRNZZQA=w408-h306-k-no',
-            location: '1215 S Cooper St, Arlington, TX 76010',
-            distance: '3.1 miles',
-            rating: 3.9,
-            reviewCount: 42,
-            categories: ['Asian items','indian store'],
-            openStatus: 'Closed - Opens at 7AM',
-            phone: '(555) 789-0123',
-            hours: 'Mon-Fri: 7AM-7PM, Sat: 8AM-5PM'
-          },
-        ];
+        // Try to fetch from backend first
+        console.log('Attempting to fetch stores from backend...');
+        const response = await axios.get(`${BASE_URL}stores/`, {
+          withCredentials: true,
+          timeout: 10000, // 10 second timeout
+        });
         
-        // Simulate location detection
-        setCurrentLocation('Arlington, TX');
-        setStores(fetchedStores);
+        if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+          // Transform backend data to match our Store interface
+          const backendStores: Store[] = response.data.map((store: any, index: number) => ({
+            id: store.id || index,
+            name: store.name || store.title || 'Unknown Store',
+            image: store.image || store.image_url || store.photo,
+            location: store.location || store.address || 'Location not available',
+            distance: store.distance || `${Math.floor(Math.random() * 5) + 0.5} miles`,
+            rating: store.rating || store.stars || 4.0,
+            reviewCount: store.review_count || store.reviews || Math.floor(Math.random() * 200) + 10,
+            categories: store.categories || store.tags || ['General'],
+            openStatus: store.open_status || store.status || 'Open now',
+            phone: store.phone || store.contact || '(555) 000-0000',
+            hours: store.hours || store.operating_hours || 'Mon-Fri: 9AM-6PM',
+            featured: store.featured || false
+          }));
+          
+          console.log('Successfully fetched stores from backend:', backendStores.length, 'stores');
+          setStores(backendStores);
+          setCurrentLocation('Arlington, TX'); // You might want to get this from backend too
+        } else {
+          // Fallback to hardcoded data
+          console.log('No valid data from backend, using hardcoded stores');
+          setStores(hardcodedStores);
+          setCurrentLocation('Arlington, TX');
+        }
       } catch (error) {
-        console.error('Error fetching stores:', error);
+        console.error('Error fetching stores from backend, using fallback:', error);
+        // Fallback to hardcoded data
+        setStores(hardcodedStores);
+        setCurrentLocation('Arlington, TX');
       } finally {
         setIsLoading(false);
       }

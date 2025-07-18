@@ -12,9 +12,29 @@ import {
   SafeAreaView,
   Dimensions
 } from 'react-native';
-import { Ionicons, FontAwesome, MaterialIcons } from '@expo/vector-icons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import FontAwesome from 'react-native-vector-icons/FontAwesome';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 const { width } = Dimensions.get('window');
+
+interface ScamData {
+  id: string;
+  name: string;
+  description: string;
+  status: 'review' | 'confirmed' | 'low';
+  avatar: string | null;
+  type: string;
+  lastReported: string;
+  reports: number;
+}
+
+interface ReportForm {
+  name: string;
+  description: string;
+  tags: string[];
+  image: string | null;
+}
 
 // Single default data entry that will be used for all scam reports
 const DEFAULT_SCAM_DATA = {
@@ -30,16 +50,16 @@ const DEFAULT_SCAM_DATA = {
 
 const ScamShieldApp = () => {
   const [showReportModal, setShowReportModal] = useState(false);
-  const [reportForm, setReportForm] = useState({
+  const [reportForm, setReportForm] = useState<ReportForm>({
     name: '',
     description: '',
     tags: [],
     image: null,
   });
-  const [selectedProfile, setSelectedProfile] = useState(null);
+  const [selectedProfile, setSelectedProfile] = useState<ScamData | null>(null);
   
   // Use the default data for all entries
-  const scammerProfiles = Array(6).fill(DEFAULT_SCAM_DATA).map((item, index) => ({
+  const scammerProfiles: ScamData[] = Array(6).fill(DEFAULT_SCAM_DATA).map((item, index) => ({
     ...item,
     id: `default-${index + 1}` // Give each entry a unique ID
   }));
@@ -56,7 +76,7 @@ const ScamShieldApp = () => {
     });
   };
 
-  const renderProfileItem = ({ item }) => (
+  const renderProfileItem = ({ item }: { item: ScamData }) => (
     <TouchableOpacity 
       style={styles.profileItem} 
       onPress={() => setSelectedProfile(item)}
@@ -73,7 +93,7 @@ const ScamShieldApp = () => {
     </TouchableOpacity>
   );
 
-  const renderScammerCard = ({ item }) => (
+  const renderScammerCard = ({ item }: { item: ScamData }) => (
     <TouchableOpacity 
       style={styles.card} 
       activeOpacity={0.8}

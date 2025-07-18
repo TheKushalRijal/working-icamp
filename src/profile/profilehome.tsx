@@ -19,16 +19,25 @@ import MaterialIcon from 'react-native-vector-icons/MaterialIcons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-//import * as ImagePicker from 'expo-image-picker';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
+import ScamShieldApp from '../profileredirect/important/scammers';
+// Update the navigation type to match the actual screens in App.tsx
+import { DEV_BASE_URL } from '@env';
+
 
 type RootStackParamList = {
-  Outside: undefined;
+  Personal: undefined;
   Visa: undefined;
   Resources: undefined;
-  Community: undefined;
+  Outside: undefined;
   Scams: undefined;
-  Settings: undefined;
+  Groups: undefined;
+  Store: undefined;
+  UploadPost: undefined;
+  Test: undefined;
+  Rides: undefined;
+  ScamShieldApp: undefined;
+  Lawyers:undefined;
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -73,7 +82,14 @@ const ProfilePage = () => {
   const fetchProfileData = async () => {
     try {
       // Replace this URL with your actual backend API endpoint
-      const response = await fetch('YOUR_BACKEND_API_URL/profile');
+      const token = await AsyncStorage.getItem('userToken'); // Get saved token
+    
+    const response = await fetch('DEV_BASE_URL/profile/', {
+      headers: {
+        'Authorization': `Bearer ${token}`, // ← Critical for authentication
+        'Content-Type': 'application/json'
+      }
+    });
       if (response.ok) {
         const data = await response.json();
         setProfileData(data);
@@ -105,8 +121,7 @@ const ProfilePage = () => {
     { icon: 'school', title: "University Info", description: "Campus resources, academic calendar", route: "Outside", color: "#7C3AED" },
     { icon: 'receipt', title: "Visa Guidance", description: "F1 visa tips, OPT/CPT info", route: "Visa", color: "#059669" },
     { icon: 'library-books', title: "Student Resources", description: "Tutoring, career services", route: "Resources", color: "#D97706" },
-    { icon: 'groups', title: "Job Help", description: "Get recomendation Help for jobs", route: "Community", color: "#2563EB" },
-    { icon: 'warning', title: "Avoid Scams", description: "Common frauds to watch for", route: "Scams", color: "#DC2626" }
+    { icon: 'warning', title: "Avoid Scams", description: "Common frauds to watch for", route: "ScamShieldApp", color: "#DC2626" }
   ];
 
   const headerHeight = scrollY.interpolate({
@@ -129,36 +144,33 @@ const ProfilePage = () => {
 
   const pickImage = async () => {
     try {
-      // Request permission
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Please grant permission to access your photos');
-        return;
-      }
+      // Use react-native-image-picker instead of expo-image-picker
+      const options = {
+        mediaType: 'photo' as const,
+        includeBase64: false,
+        maxHeight: 2000,
+        maxWidth: 2000,
+      };
 
-      // Launch image picker
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
+      const result = await launchImageLibrary(options);
 
-      if (!result.canceled && result.assets[0]) {
+      if (result.assets && result.assets[0]) {
         const newImageUri = result.assets[0].uri;
         
-        // Update profile data with new image
-        const updatedProfileData = {
-          ...profileData,
-          profilePic: newImageUri
-        };
-        
-        // Save to AsyncStorage
-        await AsyncStorage.setItem('profileData', JSON.stringify(updatedProfileData));
-        
-        // Update state
-        setProfileData(updatedProfileData);
-        setShowImageModal(false);
+        if (newImageUri) {
+          // Update profile data with new image
+          const updatedProfileData = {
+            ...profileData,
+            profilePic: newImageUri
+          };
+          
+          // Save to AsyncStorage
+          await AsyncStorage.setItem('profileData', JSON.stringify(updatedProfileData));
+          
+          // Update state
+          setProfileData(updatedProfileData);
+          setShowImageModal(false);
+        }
       }
     } catch (error) {
       console.error('Error picking image:', error);
@@ -238,13 +250,18 @@ const ProfilePage = () => {
           {/* Quick Actions */}
           <View style={styles.quickActions}>
             <TouchableOpacity style={styles.actionButton}>
-              <MaterialIcon name="message" size={20} color="#4F46E5" />
+              <MaterialIcon name="MessageCircle" size={20} color="#4F46E5" />
               <Text style={styles.actionText}>Messages</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.actionButton}>
+
+              <TouchableOpacity 
+              style={styles.actionButton}
+              onPress={() => navigation.navigate('Lawyers')}
+            >              
               <MaterialIcon name="event" size={20} color="#4F46E5" />
-              <Text style={styles.actionText}>Events</Text>
+              <Text style={styles.actionText}>Lawyers</Text>
             </TouchableOpacity>
+
             <TouchableOpacity 
               style={styles.actionButton}
               onPress={() => navigation.navigate('Groups')}
@@ -282,15 +299,7 @@ const ProfilePage = () => {
       </ScrollView>
 
       {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        <TouchableOpacity 
-          style={styles.bottomNavButton}
-          onPress={() => navigation.navigate('Settings')}
-        >
-          <Icon name="settings" size={24} color="#6B7280" />
-          <Text style={styles.bottomNavText}>Settings</Text>
-        </TouchableOpacity>
-      </View>
+      
 
       {/* Profile Image Modal */}
       <Modal
@@ -448,7 +457,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   sectionsContainer: {
-    marginTop: 8,
+    marginTop: 5,
   },
   sectionButton: {
     flexDirection: 'row',

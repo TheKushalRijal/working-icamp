@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -12,159 +12,115 @@ import {
   Dimensions,
   Linking
 } from 'react-native';
-import { Ionicons, Feather, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
-
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import Feather from 'react-native-vector-icons/Feather';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import TopNav from '../../components/navigation/TopNav';
+import axios from 'axios';
+import { DEV_BASE_URL } from '@env';
 const { width } = Dimensions.get('window');
 
+const GROUPS_ENDPOINT = `${DEV_BASE_URL}/api/groups/`;
+
+
+interface GroupData {
+  id: string;
+  name: string;
+  platform: string;
+  members?: string; // optional if backend doesn't send this yet
+  description: string;
+  link: string;
+  icon: string;
+  verified?: boolean;
+  category?: string;
+}
+
+// 1. Move hardcoded groups here
+const hardcodedGroups: GroupData[] = [
+  {
+    id: 'f1',
+    name: 'Nepali community DFW',
+    platform: 'facebook',
+    description: 'Dallas, Fortworth, Arlington, Irving help Group',
+    link: 'https://www.facebook.com/groups/800092676804143',
+    icon: 'facebook',
+   
+  },
+  {
+    id: 'f2',
+    name: 'Helpful Nepali Community Groups',
+    platform: 'telegram',
+    description: 'Worldwide scam alerts in multiple languages',
+    link: 'https://www.facebook.com/groups/usnepalhelpnetwork',
+    icon: 'telegram',
+   
+  },
+  {
+    id: 'f3',
+    name: 'US-Nepal Help Network',
+    platform: 'facebook',
+    description: 'Nepali Help Group All Over USA',
+    link: 'https://www.facebook.com/groups/usnepalhelpnetwork',
+    icon: 'facebook',
+    
+  },
+  // Add more hardcoded groups as needed
+];
+
+// Restore categories array
+const categories = [
+  { id: 'all', name: 'All Groups' },
+  { id: 'official', name: 'Official', icon: 'verified' },
+  { id: 'local', name: 'Local', icon: 'map-marker' },
+  { id: 'financial', name: 'Financial', icon: 'currency-usd' },
+  { id: 'technical', name: 'Technical', icon: 'shield-lock' },
+  { id: 'crypto', name: 'Crypto', icon: 'bitcoin' }
+];
+
 const CommunityGroupsScreen = () => {
+  const [groups, setGroups] = useState<GroupData[]>([]);
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Expanded group data with categories
-  const groupsData = {
-    featured: [
-      {
-        id: 'f1',
-        name: 'Nepali community DFW',
-        platform: 'facebook',
-        members: '58.2k',
-        description: 'Dallas, Fortworth, Arlington, Irving help Group',
-        link: 'https://www.facebook.com/groups/800092676804143',
-        icon: 'facebook',
-        verified: true,
-        category: 'official'
-      },
-      {
-        id: 'f2',
-        name: 'Helpful Nepali Community Groups',
-        platform: 'telegram',
-        members: '142.7k',
-        description: 'Worldwide scam alerts in multiple languages',
-        link: 'https://www.facebook.com/groups/usnepalhelpnetwork',
-        icon: 'telegram',
-        verified: true,
-        category: 'international'
-      },
-      {
-        id: 'f3',
-        name: 'US-Nepal Help Network',
-        platform: 'facebook',
-        members: '142.7k',
-        description: 'Nepali Help Group All Over USA',
-        link: 'https://www.facebook.com/groups/usnepalhelpnetwork',
-        icon: 'facebook',
-        verified: true,
-        category: 'international'
-      }
-    ],
-    all: [
-      {
-        id: '1',
-        name: 'Singapore Fraud Watch',
-        platform: 'facebook',
-        members: '32.5k',
-        description: 'Local scam alerts and prevention tips',
-        link: 'https://facebook.com/groups/SGFraudWatch',
-        icon: 'facebook',
-        category: 'local'
-      },
-      {
-        id: '2',
-        name: 'Cyber Security SG',
-        platform: 'whatsapp',
-        members: '8.7k',
-        description: 'Cybersecurity professionals sharing latest threats',
-        link: 'https://chat.whatsapp.com/CyberSecuritySG',
-        icon: 'whatsapp',
-        category: 'technical'
-      },
-      {
-        id: '3',
-        name: 'Elderly Scam Prevention',
-        platform: 'facebook',
-        members: '15.3k',
-        description: 'Protecting seniors from financial scams',
-        link: 'https://facebook.com/groups/ElderlyScamPrevention',
-        icon: 'facebook',
-        category: 'seniors'
-      },
-      {
-        id: '4',
-        name: 'Crypto Scam Alert',
-        platform: 'discord',
-        members: '24.6k',
-        description: 'Identifying cryptocurrency and NFT scams',
-        link: 'https://discord.gg/CryptoScamAlert',
-        icon: 'discord',
-        category: 'crypto'
-      },
-      {
-        id: '5',
-        name: 'Online Shopping Scams',
-        platform: 'facebook',
-        members: '18.9k',
-        description: 'Spotting fake e-commerce and marketplace scams',
-        link: 'https://facebook.com/groups/OnlineShoppingScams',
-        icon: 'facebook',
-        category: 'ecommerce'
-      },
-      {
-        id: '6',
-        name: 'Job Scam Watch',
-        platform: 'telegram',
-        members: '12.4k',
-        description: 'Identifying fake job offers and recruitment scams',
-        link: 'https://t.me/JobScamWatch',
-        icon: 'telegram',
-        category: 'employment'
-      },
-      {
-        id: '7',
-        name: 'Romance Scam Victims',
-        platform: 'facebook',
-        members: '22.1k',
-        description: 'Support group for dating scam victims',
-        link: 'https://facebook.com/groups/RomanceScamVictims',
-        icon: 'facebook',
-        category: 'dating'
-      },
-      {
-        id: '8',
-        name: 'Banking Scam Alerts',
-        platform: 'whatsapp',
-        members: '9.3k',
-        description: 'Real-time alerts about banking and phishing scams',
-        link: 'https://chat.whatsapp.com/BankingScamAlerts',
-        icon: 'whatsapp',
-        category: 'financial'
-      }
-    ]
-  };
+useEffect(() => {
+    axios.get(GROUPS_ENDPOINT)
+      .then((response) => {
+        setGroups(response.data);
+      })
+      .catch((error) => {
+        console.error('Failed to fetch group data:', error);
+      });
+  }, []);
 
-  const categories = [
-    { id: 'all', name: 'All Groups' },
-    { id: 'official', name: 'Official', icon: 'verified' },
-    { id: 'local', name: 'Local', icon: 'map-marker' },
-    { id: 'financial', name: 'Financial', icon: 'currency-usd' },
-    { id: 'technical', name: 'Technical', icon: 'shield-lock' },
-    { id: 'crypto', name: 'Crypto', icon: 'bitcoin' }
-  ];
+  // 2. Combine hardcoded and fetched groups
+  const allGroups: GroupData[] = [...hardcodedGroups, ...groups];
 
-  const filteredGroups = groupsData.all.filter(group => {
+  // Filter out groups missing essential fields
+  const validGroups = allGroups.filter(
+    group => group && group.name && group.description
+  );
+
+  // 3. Use validGroups for filtering and searching
+  const filteredGroups = validGroups.filter(group => {
     const matchesCategory = activeFilter === 'all' || group.category === activeFilter;
-    const matchesSearch = group.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                         group.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const name = group.name || '';
+    const description = group.description || '';
+    const matchesSearch =
+      name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      description.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
 
-  const handleGroupPress = (link) => {
+  const handleGroupPress = (link: string) => {
     Linking.openURL(link).catch(err => {
       console.error("Failed to open URL:", err);
-      alert("Couldn't open the group link. Please try again later.");
+      // Using console.warn instead of alert for better error handling
+      console.warn("Couldn't open the group link. Please try again later.");
     });
   };
 
-  const getPlatformIcon = (platform) => {
+  const getPlatformIcon = (platform: string) => {
     switch (platform) {
       case 'facebook': return <Feather name="facebook" size={20} color="#1877F2" />;
       case 'whatsapp': return <Feather name="whatsapp" size={20} color="#25D366" />;
@@ -175,7 +131,7 @@ const CommunityGroupsScreen = () => {
     }
   };
 
-  const getPlatformColor = (platform) => {
+  const getPlatformColor = (platform: string) => {
     switch (platform) {
       case 'facebook': return '#1877F2';
       case 'whatsapp': return '#25D366';
@@ -186,7 +142,7 @@ const CommunityGroupsScreen = () => {
     }
   };
 
-  const renderGroupItem = ({ item }) => (
+  const renderGroupItem = ({ item }: { item: GroupData }) => (
     <TouchableOpacity
       style={styles.groupCard}
       onPress={() => handleGroupPress(item.link)}
@@ -213,7 +169,7 @@ const CommunityGroupsScreen = () => {
           </View>
           <View style={styles.groupMeta}>
             <Text style={styles.groupPlatform}>
-              {item.platform.charAt(0).toUpperCase() + item.platform.slice(1)}
+              {(item.platform || '').charAt(0).toUpperCase() + (item.platform || '').slice(1)}
             </Text>
             <View style={styles.memberCount}>
               <Ionicons name="people" size={12} color="#7f8c8d" />
@@ -242,17 +198,13 @@ const CommunityGroupsScreen = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <TopNav title="Community Groups" />
       <ScrollView 
         style={styles.container}
         stickyHeaderIndices={[1]} // Makes the filter bar sticky
       >
         {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>Helpful Nepali Community Groups</Text>
-          <Text style={styles.subtitle}>
-            Connect with {groupsData.all.length}+ Nepali communities in USA
-          </Text>
-        </View>
+        
 
         {/* Search Bar */}
         <View style={styles.searchContainer}>
@@ -280,7 +232,7 @@ const CommunityGroupsScreen = () => {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.featuredContainer}
             >
-              {groupsData.featured.map(group => (
+              {hardcodedGroups.map(group => (
                 <TouchableOpacity
                   key={group.id}
                   style={[
@@ -290,20 +242,10 @@ const CommunityGroupsScreen = () => {
                   onPress={() => handleGroupPress(group.link)}
                 >
                   <View style={styles.featuredHeader}>
-                    <View style={[
-                      styles.featuredIconContainer,
-                      { backgroundColor: `${getPlatformColor(group.platform)}20` }
-                    ]}>
-                      {getPlatformIcon(group.platform)}
-                    </View>
-                    {group.verified && (
-                      <View style={styles.featuredVerifiedBadge}>
-                        <MaterialIcons name="verified" size={12} color="white" />
-                      </View>
-                    )}
+                    
+                    
                   </View>
                   <Text style={styles.featuredName} numberOfLines={2}>{group.name}</Text>
-                  <Text style={styles.featuredMembers}>{group.members} members</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -348,7 +290,7 @@ const CommunityGroupsScreen = () => {
         {/* All Groups */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            {activeFilter === 'all' ? 'All Communities' : `${categories.find(c => c.id === activeFilter).name} Communities`}
+            {activeFilter === 'all' ? 'All Communities' : `${categories.find(c => c.id === activeFilter)?.name || 'Unknown'} Communities`}
             <Text style={styles.groupCount}>  ({filteredGroups.length})</Text>
           </Text>
           

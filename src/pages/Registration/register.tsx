@@ -14,6 +14,9 @@ import {
 import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+//import { DEV_BASE_URL } from '@env';
+const DEV_BASE_URL = 'http://10.0.2.2:8000';
 
 type RootStackParamList = {
   Auth: undefined;
@@ -76,9 +79,13 @@ const Register: React.FC = () => {
 
     try {
       // No CSRF token in React Native normally. Adjust backend for tokenless or JWT.
-      const response = await axios.post('http://10.0.2.2:8000/register_user/', formData, {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      const response = await axios.post(
+        `${DEV_BASE_URL}/register_user/`,
+        formData,
+        {
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
 
       if (response.status === 200) {
         // Store full name if needed in AsyncStorage or context, here just local state
@@ -128,12 +135,22 @@ const Register: React.FC = () => {
 
     try {
       const response = await axios.post(
-        'http://10.0.2.2:8000/verify_code/',
+        `${DEV_BASE_URL}/verify_code/`,
         { email: formData.email, code },
         {
           headers: { 'Content-Type': 'application/json' },
         }
       );
+      console.log("login route is working from here ")
+      if (response.data.access) { // Check for JWT token
+       //  Save tokens securely
+       await AsyncStorage.setItem('accessToken', response.data.access);
+      await AsyncStorage.setItem('refreshToken', response.data.refresh);
+      await AsyncStorage.setItem('userData', JSON.stringify(response.data.user));
+
+        
+        // Store user data if needed
+        await AsyncStorage.setItem('userData', JSON.stringify(response.data.user));
 
       if (response.status === 200) {
         Alert.alert('Success', 'Verification successful! You can now login.', [
@@ -145,7 +162,7 @@ const Register: React.FC = () => {
       } else {
         setVerificationError('Invalid verification code. Please try again.');
       }
-    } catch (error: any) {
+    }} catch (error: any) {
       console.log(error);
       
       setVerificationError(
@@ -184,8 +201,7 @@ const Register: React.FC = () => {
               {verificationCode.map((digit, index) => (
                 <TextInput
                   key={index}
-                  ref={ref => (codeInputs.current[index] = ref)}
-                  style={styles.codeInput}
+                  ref={ref => { codeInputs.current[index] = ref; }}                  style={styles.codeInput}
                   keyboardType="number-pad"
                   maxLength={1}
                   value={digit}

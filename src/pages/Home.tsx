@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, FlatList } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, FlatList, ActivityIndicator } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/Feather';
@@ -8,13 +8,16 @@ import { useEvents } from '../context/EventContext';
 import VideoSection from '../components/videos/VideoSection';
 import BottomNav from '../components/navigation/BottomNav';
 import UserPost from '../components/UserPost';
-  import { DEV_BASE_URL, PROD_BASE_URL } from '@env';
-
+  //import { DEV_BASE_URL, PROD_BASE_URL } from '@env';
+import { PROD_BASE_URL } from '@env';
+const DEV_BASE_URL = 'http://10.0.2.2:8000';
 
 // Define the navigation type
 type RootStackParamList = {
   Home: undefined;
   Upload: undefined;
+  UploadPost: undefined;
+  Visa:undefined;
   // Add other screens as needed
 };
 
@@ -64,6 +67,8 @@ const Home: React.FC = () => {
   const [localPosts, setLocalPosts] = useState<Post[]>([]);
   const [backendPosts, setBackendPosts] = useState<Post[]>([]);
   const [featuredVideos, setFeaturedVideos] = useState<any[]>([]);
+  const [announcement, setAnnouncement] = useState<any>(null);
+  const [announcementLoading, setAnnouncementLoading] = useState(true);
 
 
 
@@ -72,16 +77,19 @@ const Home: React.FC = () => {
 
 
 const getFromBackend = async () => {
-  const BASE_URL = __DEV__ ? DEV_BASE_URL : PROD_BASE_URL;
+  const BASE_URL = DEV_BASE_URL;
 
   try {
-    const homeResponse = await axios.get(`${BASE_URL}home/`, {
-      withCredentials: true,
+    const homeResponse = await axios.get(`${BASE_URL}/home/`, {
+   //   withCredentials: true,
     });
 
-    const videosResponse = await axios.get(`${BASE_URL}videos/`, {
-      withCredentials: true,
+    const videosResponse = await axios.get(`${BASE_URL}/videos/`, {
+   //   withCredentials: true,
     });
+    console.log(videosResponse.data)
+
+  
 
     return {
       home: homeResponse.data,
@@ -93,56 +101,70 @@ const getFromBackend = async () => {
   }
 };
 
+const allgetFromBackend = async () => {
+  const BASE_URL = DEV_BASE_URL;
 
-  useEffect(() => {
-    const fetchBackendData = async () => {
-      try {
-        const { home, videos } = await getFromBackend();
-        console.log('Backend data received:', { home, videos });
-        
-        if (home && Array.isArray(home)) {
-          const formattedPosts = home.map((post: any) => ({
-            id: post.id || Math.random().toString(),
-            user: post.user || 'Anonymous',
-            title: post.title || '',
-            text: post.content || post.caption || '',
-            content: post.content || post.caption || '',
-            caption: post.caption || '',
-            author: post.author || post.user || 'Anonymous',
-            date: post.date || post.Timestamp || new Date().toISOString(),
-            likes: post.likes || 0,
-            comments: post.comments || 0,
-            isLiked: false,
-            isBookmarked: false,
-            location: post.location || {},
-            Timestamp: post.Timestamp,
-            preview: post.preview
-          }));
-          console.log('Formatted backend posts:', formattedPosts);
-          setBackendPosts(formattedPosts);
-        }
+  try {
+    const homeResponse = await axios.get(`${BASE_URL}/home/comunity/`, {
+     // withCredentials: true,
+    });
 
-        if (videos && Array.isArray(videos)) {
-          console.log('Featured videos data:', videos);
-          console.log('Video URLs:', videos.map(v => v.url));
-          console.log('Video titles:', videos.map(v => v.title));
-          setFeaturedVideos(videos);
-        } else {
-          console.log('No videos data received or invalid format:', videos);
-        }
-      } catch (error) {
-        console.error('Error fetching backend data:', error);
-      }
+    const videosResponse = await axios.get(`${BASE_URL}/videos/community/`, {
+     // withCredentials: true,
+    });
+    console.log(videosResponse.data)
+
+    return {
+      communityhome: homeResponse.data,
+      communityvideos: videosResponse.data,
     };
-
-    fetchBackendData();
-  }, []);
-
-
-
-
+  } catch (error) {
+    console.error('Error fetching from backend:', error);
+    return {};
+  }
+};
 
 
+
+useEffect(() => {
+  const fetchBackendData = async () => {
+    const { home, videos } = await getFromBackend();
+    console.log('Backend data received:', { home, videos });
+    
+    if (home && Array.isArray(home)) {
+      const formattedPosts = home.map((post: any) => ({
+        id: post.id || Math.random().toString(),
+        user: post.user || 'Anonymous',
+        title: post.title || '',
+        text: post.content || post.caption || '',
+        content: post.content || post.caption || '',
+        caption: post.caption || '',
+        author: post.author || post.user || 'Anonymous',
+        date: post.date || post.Timestamp || new Date().toISOString(),
+        likes: post.likes || 0,
+        comments: post.comments || 0,
+        isLiked: false,
+        isBookmarked: false,
+        location: post.location || {},
+        Timestamp: post.Timestamp,
+        preview: post.preview
+      }));
+      console.log('Formatted backend posts:', formattedPosts);
+      setBackendPosts(formattedPosts);
+    }
+
+    if (videos && Array.isArray(videos)) {
+      console.log('Featured videos data:', videos);
+      console.log('Video URLs:', videos.map(v => v.url));
+      console.log('Video titles:', videos.map(v => v.title));
+      setFeaturedVideos(videos);
+    } else {
+      console.log('No videos data received or invalid format:', videos);
+    }
+  };
+
+  fetchBackendData();
+}, []);
 
   const handleJoinEvent = (eventId: number) => {
     setEvents(prev =>
@@ -167,19 +189,36 @@ const getFromBackend = async () => {
   };
 
   const handleUploadPress = () => {
-    navigation.navigate('Upload');
+    navigation.navigate('UploadPost');
   };
 
+  // Fetch announcement from backend or fallback
+ 
+
+  // Add renderAnnouncement function
+  useEffect(() => {
+  const fetchAnnouncement = async () => {
+    setAnnouncementLoading(true);
+    const BASE_URL = DEV_BASE_URL;
+    console.log("her is the announcement data we have")
+    try {
+      const response = await axios.get(`${BASE_URL}/announcements/`);
+      setAnnouncement(response.data);
+      console.log("this is the announcement data",response.data)
+    } catch (error) {
+      setAnnouncement({
+        title: '📢 Summer Vacation',
+        description: 'class starting on Aug 19',
+      });
+    } finally {
+      setAnnouncementLoading(false);
+    }
+  };
+  fetchAnnouncement();
+}, []);
+
   const renderContent = () => {
-    // Common announcement for both tabs
-    const renderAnnouncement = () => (
-      <View style={styles.announcementContainer}>
-        <FeaturedAnnouncement 
-          title="📢 Summer Vacation" 
-          description="class starting on Aug 19" 
-        />
-      </View>
-    );
+
 
     // Render posts based on active tab
     const renderEventItem = ({ item: event }: { item: Event }) => (
@@ -313,17 +352,26 @@ const getFromBackend = async () => {
       <CommunityTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
       <View style={styles.contentArea}>
-        {/* Announcement and Videos always shown */}
-        <View style={styles.announcementContainer}>
-          <FeaturedAnnouncement 
-            title="📢 Summer Vacation" 
-            description="class starting on Aug 19" 
-          />
-        </View>
-        <VideoSection activeTab={activeTab} />
-        {/* Posts/Events based on tab */}
-        {renderContent()}
-      </View>
+  {/* Announcement and Videos always shown */}
+  <View style={styles.announcementContainer}>
+    {announcementLoading ? (
+      <Text>Loading announcement...</Text>
+    ) : announcement ? (
+      <FeaturedAnnouncement 
+        title={`📢 ${announcement.title}`} 
+        description={announcement.description} 
+      />
+    ) : (
+      <Text>No announcements available</Text>
+    )}
+  </View>
+
+  <VideoSection activeTab={activeTab} />
+  
+  {/* Posts/Events based on tab */}
+  {renderContent()}
+</View>
+
     </ScrollView>
   );
 };

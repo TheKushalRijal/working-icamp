@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Platform, ScrollView, Dimensions, TouchableOpacity, Image } from 'react-native';
 import axios from 'axios';
 import YoutubePlayer from 'react-native-youtube-iframe';
-
+import { DEV_BASE_URL } from '@env';
 interface Video {
   id: string | number;
   url: string;
@@ -83,14 +83,20 @@ const VideoSection: React.FC<VideoSectionProps> = ({ activeTab, videos: propVide
     const fetchVideos = async () => {
       try {
         setLoading(true);
-        const BASE_URL = __DEV__
-          ? "http://localhost:8000/"
-          : "https://api.sapana.xyz/";
+        const BASE_URL = DEV_BASE_URL;
+          
 
-        const response = await axios.get(`${BASE_URL}videos/`, {
-          withCredentials: true,
+        const response = await axios.get(`${BASE_URL}/videos/`, {
+         // withCredentials: true,
           timeout: 1000
         });
+        console.log(response.data)
+
+         const communityresponse = await axios.get(`${BASE_URL}videos/community/`, {
+         // withCredentials: true,
+          timeout: 1000
+        });
+        console.log(response.data)
 
         if (response.data && Array.isArray(response.data)) {
           const filteredVideos = getFilteredVideos(response.data);
@@ -98,6 +104,14 @@ const VideoSection: React.FC<VideoSectionProps> = ({ activeTab, videos: propVide
             setVideos(filteredVideos);
           }
         }
+console.log(response.data)
+ if (communityresponse.data && Array.isArray(response.data)) {
+          const filteredVideos = getFilteredVideos(response.data);
+          if (filteredVideos.length > 0) {
+            setVideos(filteredVideos);
+          }
+        }
+
       } catch (error) {
         console.log('Using sample videos (backend unavailable)');
         setVideos(sampleVideos);

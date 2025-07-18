@@ -17,17 +17,18 @@ import UniversitySelection from './src/pages/university';
 import StoresNearMe from './src/pages/stores';
 import PersonalInfoPage from './src/profileredirect/important/personal';
 import VisaPage from './src/profileredirect/important/visa';
+import ScammersPage from './src/profileredirect/important/scammers';
+import GroupsPage from './src/profileredirect/important/groups';
 import UploadPost from './src/pages/uploadpost';
 import UniversityResourcesPage from './src/profileredirect/community/resources';
 import Test from './src/pages/test';
 import ProfilePage from './src/profile/profilehome';
 import Housings from './src/pages/housings';
 import NepaliCalendar from './src/components/calander/calander';
-
 import BottomNav from './src/components/navigation/BottomNav';
-
+import CommunityGroupsScreen from './src/profileredirect/important/groups';
 const Stack = createNativeStackNavigator();
-
+import LawyersScreen from './src/profileredirect/important/lawyers';
 function AppNavigator() {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -46,9 +47,17 @@ function AppNavigator() {
       <Stack.Screen name="Store" component={StoresNearMe} />
       <Stack.Screen name="Personal" component={PersonalInfoPage} />
       <Stack.Screen name="Visa" component={VisaPage} />
+      <Stack.Screen name="Scams" component={ScammersPage} />
+      <Stack.Screen name="Groups" component={CommunityGroupsScreen} />
       <Stack.Screen name="UploadPost" component={UploadPost} />
       <Stack.Screen name="Resources" component={UniversityResourcesPage} />
       <Stack.Screen name="Test" component={Test} />
+      <Stack.Screen name="Outside" component={Outside} />
+      <Stack.Screen name="Upload" component={UploadPost} />
+      <Stack.Screen name="Lawyers" component={LawyersScreen} />
+
+
+
     </Stack.Navigator>
   );
 }
