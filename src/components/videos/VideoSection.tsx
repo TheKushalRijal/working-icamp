@@ -19,13 +19,13 @@ interface VideoSectionProps {
 const sampleVideos: Video[] = [
   {
     id: 1,
-    url: 'https://www.youtube.com/embed/u5W0AJXsp4c',
+    url: 'https://www.youtube.com/u5W0AJXsp4c',
     thumbnail: 'https://img.youtube.com/vi/u5W0AJXsp4c/maxresdefault.jpg',
     author: 'user'
   },
   {
     id: 2,
-    url: 'https://www.youtube.com/embed/_2vFnFsu8B4',
+    url: 'https://www.youtube.com/_2vFnFsu8B4',
     thumbnail: 'https://img.youtube.com/vi/_2vFnFsu8B4/maxresdefault.jpg',
     author: 'campus'
   }
@@ -88,13 +88,25 @@ const VideoSection: React.FC<VideoSectionProps> = ({ activeTab, videos: propVide
           // withCredentials: true,
           timeout: 1000
         });
-        console.log(response.data);
-        if (response.data && Array.isArray(response.data)) {
-          const filteredVideos = getFilteredVideos(response.data);
-          if (filteredVideos.length > 0) {
-            setVideos(filteredVideos);
-          }
-        }
+
+        // here is the fault
+                                  console.log("this is the video url", response.data);
+                          if (response.data) {
+                            const videoArray = Array.isArray(response.data) ? response.data : response.data.videos;
+                            console.log("Parsed video array:", videoArray);
+
+                            const filteredVideos = getFilteredVideos(videoArray);
+                            console.log("Filtered videos:", filteredVideos);
+
+                            if (filteredVideos.length > 0) {
+                              setVideos(filteredVideos);
+                            } else {
+                              console.log("No videos passed the filter.");
+                            }
+                          } else {
+                            console.log("No data in response");
+                          }
+
       } catch (error) {
         console.log('Using sample videos (backend unavailable)');
         setVideos(sampleVideos);
@@ -158,23 +170,24 @@ const VideoSection: React.FC<VideoSectionProps> = ({ activeTab, videos: propVide
               activeOpacity={0.9}
             >
               <View style={styles.videoWrapper}>
-                <View style={styles.thumbnailContainer}>
-                  {playingVideoId === video.id ? (
-                    <YoutubePlayer
-                      height={200}
-                      width={cardWidth}
-                      play={true}
-                      videoId={video.url.split('/embed/')[1]}
-                      onChangeState={event => {
-                        if (event === 'ended') setPlayingVideoId(null);
-                      }}
-                      webViewStyle={{ borderRadius: 12 }}
-                    />
-                  ) : (
-                    <Image source={{ uri: video.thumbnail }} style={{ width: '100%', height: 200, borderRadius: 12 }} />
-                  )}
-                </View>
-              </View>
+                      <View style={styles.thumbnailContainer}>
+                        {playingVideoId === video.id ? (
+                          <YoutubePlayer
+                            height={200}
+                            width={cardWidth}
+                            play={true}
+                            videoId={video.url} // 👈 Removed .split('/embed/')[1]
+                            onChangeState={event => {
+                              if (event === 'ended') setPlayingVideoId(null);
+                            }}
+                            webViewStyle={{ borderRadius: 12 }}
+                          />
+                        ) : (
+                          <Image source={{ uri: video.thumbnail }} style={{ width: '100%', height: 200, borderRadius: 12 }} />
+                        )}
+                      </View>
+                    </View>
+
             </TouchableOpacity>
           ))}
         </ScrollView>

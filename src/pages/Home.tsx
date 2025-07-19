@@ -11,7 +11,7 @@ import UserPost from '../components/UserPost';
   //import { DEV_BASE_URL, PROD_BASE_URL } from '@env';
 import { PROD_BASE_URL } from '@env';
 const DEV_BASE_URL = 'http://10.0.2.2:8000';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
 // Define the navigation type
 type RootStackParamList = {
   Home: undefined;
@@ -198,25 +198,50 @@ useEffect(() => {
 
   // Add renderAnnouncement function
   useEffect(() => {
-  const fetchAnnouncement = async () => {
-    setAnnouncementLoading(true);
-    const BASE_URL = DEV_BASE_URL;
-    console.log("her is the announcement data we have")
-    try {
-      const response = await axios.get(`${BASE_URL}/announcements/`);
-      setAnnouncement(response.data);
-      console.log("this is the announcement data",response.data)
-    } catch (error) {
-      setAnnouncement({
-        title: '📢 Summer Vacation',
-        description: 'class starting on Aug 19',
-      });
-    } finally {
-      setAnnouncementLoading(false);
-    }
-  };
-  fetchAnnouncement();
-}, []);
+    const fetchAnnouncement = async () => {
+      const BASE_URL = DEV_BASE_URL;
+  
+      // Helper function to save data in AsyncStorage
+      const saveToStorage = async (data) => {
+        try {
+          await AsyncStorage.setItem('announcement', JSON.stringify(data));
+          console.log('Saved announcement to storage.');
+        } catch (error) {
+          console.error('Error saving announcement to storage:', error);
+        }
+      };
+  
+      try {
+        // Load cached data first
+        const cached = await AsyncStorage.getItem('announcement');
+        if (cached) {
+          setAnnouncement(JSON.parse(cached));
+          console.log('Loaded announcement from cache.');
+        } else {
+          // Use default if no cache
+          const defaultData = {
+            title: '📢 Summer Vacation',
+            description: 'Class starting on Aug 19',
+          };
+          setAnnouncement(defaultData);
+        }
+  
+        // Then try fetching from backend
+        const response = await axios.get(`${BASE_URL}/announcements/`);
+        if (response?.data) {
+          setAnnouncement(response.data);
+          await saveToStorage(response.data); // Save fetched data to storage
+          console.log('Fetched announcement from backend:', response.data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch from backend:', error.message);
+      } finally {
+        setAnnouncementLoading(false);
+      }
+    };
+  
+    fetchAnnouncement();
+  }, []);
 
   const renderContent = () => {
 
@@ -352,11 +377,10 @@ useEffect(() => {
 
       <CommunityTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
+      <View style={styles.contentArea}>
   {/* Announcement and Videos always shown */}
   <View style={styles.contentArea}>
-  {/* Announcement and Videos always shown */}
-  <View style={styles.contentArea}>
-  {/* Announcement and Videos always shown */}
+  {/* Announcement */}
   <View style={styles.announcementContainer}>
     {announcementLoading ? (
       <Text>Loading announcement...</Text>
@@ -370,23 +394,14 @@ useEffect(() => {
     )}
   </View>
 
+  {/* Videos */}
   <VideoSection activeTab={activeTab} />
-  
-  {/* Posts/Events based on tab */}
+
+  {/* Posts/Events */}
   {renderContent()}
 </View>
 
-
-  
-
-
-
-
-
-  <VideoSection activeTab={activeTab} />
-  
   {/* Posts/Events based on tab */}
-  {renderContent()}
 </View>
 
     </ScrollView>
