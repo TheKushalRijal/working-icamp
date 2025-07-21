@@ -3,64 +3,96 @@ import { View, Text, TextInput, Image, TouchableOpacity, FlatList, StyleSheet, L
 import { Picker } from '@react-native-picker/picker';
 import Feather from 'react-native-vector-icons/Feather';
 import TopNav from '../components/navigation/TopNav';
+import { DEV_BASE_URL } from '@env';
+import axios from 'axios';
 
+interface Housing {
+  id: number;
+  name: string;
+  image: string;
+  price: number;
+  website: string;
+  campusType: string;
+}
+
+const fallbackData: Housing[] = [
+  {
+    id: 1,
+    name: "Zen Apartments",
+    image: "https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=MGpFE55u0nckzeo4ZkqOZQ&cb_client=search.gws-prod.gps&w=408&h=240&yaw=73.23328&pitch=0&thumbfov=100",
+    price: 1300,
+    website: "https://www.apartments.com/zen-arlington-tx/6k53hst/",
+    campusType: "offcampus"
+  },
+  {
+    id: 2,
+    name: "Woodcrest Apartments",
+    image: "https://picturescdn.alndata.com/?pid=6d9f7710-ec8e-4a0e-a83c-4f84e838a96d",
+    price: 1300,
+    website: "https://www.apartments.com/woodcrest-apartments-arlington-tx/xrhlc8m/",
+    campusType: "offcampus"
+  },
+  {
+    id: 3,
+    name: "University Village",
+    image: "https://images.unsplash.com/photo-1493809842364-78817add7ffb?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80",
+    price: 1200,
+    website: "https://www.uta.edu/campus-ops/housing/apartments/university-village",
+    campusType: "oncampus"
+  },
+  {
+    id: 4,
+    name: "Rose Street Apartments",
+    image: "https://images1.apartments.com/i2/Az5Dsna6XrRFUNiVxCNZs5l4YY0eWsRFaISw83lMXew/111/309-rose-st-arlington-tx-building-photo.jpg",
+    price: 1375,
+    website: "https://www.apartments.com/309-rose-st-arlington-tx/5dxb78q/",
+    campusType: "offcampus"
+  },
+  {
+    id: 5,
+    name: "South Campus",
+    image: "https://images1.apartments.com/i2/2BX8p4eWlSJrBojuwW0yT7YU9kWv3AGm1jswHPSoSsc/111/south-campus-apartments-arlington-tx-building-photo.jpg",
+    price: 1375,
+    website: "https://www.apartments.com/south-campus-apartments-arlington-tx/4y8bysj/",
+    campusType: "offcampus"
+  }
+];
 
 const UTAHousingApp = () => {
-  const [posts, setPosts] = useState([]);
-  const [filteredPosts, setFilteredPosts] = useState([]);
+  const [posts, setPosts] = useState<Housing[]>([]);
+  const [filteredPosts, setFilteredPosts] = useState<Housing[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [campusFilter, setCampusFilter] = useState('all');
   const [priceFilter, setPriceFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
-    const fetchedPosts = [
-      {
-        id: 1,
-        name: "Zen Apartments",
-        image: "https://streetviewpixels-pa.googleapis.com/v1/thumbnail?panoid=MGpFE55u0nckzeo4ZkqOZQ&cb_client=search.gws-prod.gps&w=408&h=240&yaw=73.23328&pitch=0&thumbfov=100",
-        price: 1300,
-        website: "https://www.apartments.com/zen-arlington-tx/6k53hst/",
-        campusType: "offcampus"
-      },
-      {
-        id: 2,
-        name: "Woodcrest Apartments",
-        image: "https://picturescdn.alndata.com/?pid=6d9f7710-ec8e-4a0e-a83c-4f84e838a96d",
-        price: 1300,
-        website: "https://www.apartments.com/woodcrest-apartments-arlington-tx/xrhlc8m/",
-        campusType: "offcampus"
-      },
-      {
-        id: 3,
-        name: "University Village",
-        image: "https://images.unsplash.com/photo-1493809842364-78817add7ffb?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80",
-        price: 1200,
-        website: "https://www.uta.edu/campus-ops/housing/apartments/university-village",
-        campusType: "oncampus"
-      },
-      {
-        id: 4,
-        name: "Rose Street Apartments",
-        image: "https://images1.apartments.com/i2/Az5Dsna6XrRFUNiVxCNZs5l4YY0eWsRFaISw83lMXew/111/309-rose-st-arlington-tx-building-photo.jpg",
-        price: 1375,
-        website: "https://www.apartments.com/309-rose-st-arlington-tx/5dxb78q/",
-        campusType: "offcampus"
-      },
-      {
-        id: 5,
-        name: "South Campus",
-        image: "https://images1.apartments.com/i2/2BX8p4eWlSJrBojuwW0yT7YU9kWv3AGm1jswHPSoSsc/111/south-campus-apartments-arlington-tx-building-photo.jpg",
-        price: 1375,
-        website: "https://www.apartments.com/south-campus-apartments-arlington-tx/4y8bysj/",
-        campusType: "offcampus"
-      },
-    ];
-
-    setPosts(fetchedPosts);
-    setFilteredPosts(fetchedPosts);
+    const fetchHousing = async () => {
+      try {
+        const response = await axios.get(`${DEV_BASE_URL}/housings/`, {
+          timeout: 1000, // 1 second timeout
+        });
+  
+        const data = response.data; // Axios puts response in `.data`
+        setPosts(data);
+        setFilteredPosts(data);
+      } catch (error) {
+        console.warn('Backend fetch failed, falling back to hardcoded data: for housings', error);
+        setPosts(fallbackData);
+        setFilteredPosts(fallbackData);
+      }
+    };
+  
+    fetchHousing();
   }, []);
 
+
+
+
+
+
+
+  
   useEffect(() => {
     let result = posts;
 

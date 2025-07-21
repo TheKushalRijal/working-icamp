@@ -228,6 +228,8 @@ useEffect(() => {
   
         // Then try fetching from backend
         const response = await axios.get(`${BASE_URL}/announcements/`);
+        timeout: 1000
+
         if (response?.data) {
           setAnnouncement(response.data);
           await saveToStorage(response.data); // Save fetched data to storage

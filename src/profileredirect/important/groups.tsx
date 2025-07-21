@@ -20,9 +20,8 @@ import TopNav from '../../components/navigation/TopNav';
 import axios from 'axios';
 import { DEV_BASE_URL } from '@env';
 const { width } = Dimensions.get('window');
-
 const GROUPS_ENDPOINT = `${DEV_BASE_URL}/api/groups/`;
-
+DEV_BASE_URL;
 
 interface GroupData {
   id: string;
@@ -36,7 +35,7 @@ interface GroupData {
   category?: string;
 }
 
-// 1. Move hardcoded groups here
+/* 1. Move hardcoded groups here
 const hardcodedGroups: GroupData[] = [
   {
     id: 'f1',
@@ -67,7 +66,7 @@ const hardcodedGroups: GroupData[] = [
   },
   // Add more hardcoded groups as needed
 ];
-
+*/
 // Restore categories array
 const categories = [
   { id: 'all', name: 'All Groups' },
@@ -83,18 +82,64 @@ const CommunityGroupsScreen = () => {
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
 
-useEffect(() => {
-    axios.get(GROUPS_ENDPOINT)
-      .then((response) => {
-        setGroups(response.data);
-      })
-      .catch((error) => {
-        console.error('Failed to fetch group data:', error);
-      });
+  const hardcodedGroups: GroupData[] = [
+    {
+      id: 'f1',
+      name: 'Nepali community DFW',
+      platform: 'facebook',
+      description: 'Dallas, Fortworth, Arlington, Irving help Group',
+      link: 'https://www.facebook.com/groups/800092676804143',
+      icon: 'facebook',
+     
+    },
+    {
+      id: 'f2',
+      name: 'Helpful Nepali Community Groups',
+      platform: 'telegram',
+      description: 'Worldwide scam alerts in multiple languages',
+      link: 'https://www.facebook.com/groups/usnepalhelpnetwork',
+      icon: 'telegram',
+     
+    },
+    {
+      id: 'f3',
+      name: 'US-Nepal Help Network',
+      platform: 'facebook',
+      description: 'Nepali Help Group All Over USA',
+      link: 'https://www.facebook.com/groups/usnepalhelpnetwork',
+      icon: 'facebook',
+      
+    },
+    // Add more hardcoded groups if needed
+  ];
+  
+  useEffect(() => {
+    const fetchGroups = async () => {
+      try {
+        console.log('Attempting to fetch groups from backend...');
+        const response = await axios.get(`${DEV_BASE_URL}/groups/`, {
+          timeout: 1000, // 1 second timeout
+        });
+  
+        if (response.data && Array.isArray(response.data)) {
+          setGroups(response.data);
+          console.log('Groups fetched successfully.');
+        } else {
+          console.warn('Invalid response format. Falling back to hardcoded groups.');
+          setGroups(hardcodedGroups);
+        }
+      } catch (error) {
+        console.error('Failed to fetch groups. Using fallback data.', error);
+        setGroups(hardcodedGroups);
+      }
+    };
+  
+    fetchGroups();
   }, []);
+  
 
   // 2. Combine hardcoded and fetched groups
-  const allGroups: GroupData[] = [...hardcodedGroups, ...groups];
+  const allGroups: GroupData[] = groups.length > 0 ? groups : hardcodedGroups;
 
   // Filter out groups missing essential fields
   const validGroups = allGroups.filter(
@@ -253,39 +298,7 @@ useEffect(() => {
         )}
 
         {/* Category Filters */}
-        <View style={styles.filterContainer}>
-          <ScrollView 
-            horizontal 
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.filterScroll}
-          >
-            {categories.map(category => (
-              <TouchableOpacity
-                key={category.id}
-                style={[
-                  styles.filterButton,
-                  activeFilter === category.id && styles.activeFilter
-                ]}
-                onPress={() => setActiveFilter(category.id)}
-              >
-                {category.icon && (
-                  <MaterialCommunityIcons 
-                    name={category.icon} 
-                    size={16} 
-                    color={activeFilter === category.id ? 'white' : '#3498db'} 
-                    style={styles.filterIcon} 
-                  />
-                )}
-                <Text style={[
-                  styles.filterText,
-                  activeFilter === category.id && styles.activeFilterText
-                ]}>
-                  {category.name}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
+       
 
         {/* All Groups */}
         <View style={styles.section}>

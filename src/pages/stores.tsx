@@ -138,16 +138,16 @@ const StoresNearMe = () => {
   useEffect(() => {
     const fetchStores = async () => {
       setIsLoading(true);
-      const BASE_URL = __DEV__ ? DEV_BASE_URL : PROD_BASE_URL;
+      const BASE_URL = DEV_BASE_URL;
       
       try {
         // Try to fetch from backend first
         console.log('Attempting to fetch stores from backend...');
-        const response = await axios.get(`${BASE_URL}stores/`, {
-          withCredentials: true,
-          timeout: 10000, // 10 second timeout
+        const response = await axios.get(`${BASE_URL}/stores/`, {
+         // withCredentials: true,
+          timeout: 1000, // 10 second timeout
         });
-        
+        console.log(response)
         if (response.data && Array.isArray(response.data) && response.data.length > 0) {
           // Transform backend data to match our Store interface
           const backendStores: Store[] = response.data.map((store: any, index: number) => ({

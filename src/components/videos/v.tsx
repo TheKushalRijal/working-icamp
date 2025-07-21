@@ -30,11 +30,7 @@ const sampleVideos: Video[] = [
     author: 'campus'
   }
 ];
-const extractYouTubeId = (url: string) => {
-  const regex = /(?:v=|\/)([a-zA-Z0-9_-]{11})/;
-  const match = url.match(regex);
-  return match ? match[1] : null;
-};
+
 
 const VideoSection: React.FC<VideoSectionProps> = ({ activeTab, videos: propVideos }) => {
   const [videos, setVideos] = useState<Video[]>(propVideos || sampleVideos);
@@ -88,22 +84,21 @@ const VideoSection: React.FC<VideoSectionProps> = ({ activeTab, videos: propVide
         });
 
         // here is the fault
-                                  console.log("this is the video url", response.data);
-                          if (response.data) {
-                            const videoArray = Array.isArray(response.data) ? response.data : response.data.videos;
-                            console.log("Parsed video array:", videoArray);
+                              if (response.data) {
+                                    const videoArray = Array.isArray(response.data) ? response.data : response.data.videos;
+                                    console.log("Parsed video array:", videoArray);
 
-                            const filteredVideos = getFilteredVideos(videoArray);
-                            console.log("Filtered videos:", filteredVideos);
+                                    const filteredVideos = getFilteredVideos(videoArray);
+                                    console.log("Filtered videos:", filteredVideos);
 
-                            if (filteredVideos.length > 0) {
-                              setVideos(filteredVideos);
-                            } else {
-                              console.log("No videos passed the filter.");
-                            }
-                          } else {
-                            console.log("No data in response");
-                          }
+                                    if (filteredVideos.length > 0) {
+                                    setVideos(filteredVideos);
+                                    } else {
+                                    console.log("No videos passed the filter.");
+                                    }
+                                } else {
+                                    console.log("No data in response");
+                                }
 
       } catch (error) {
         console.log('Using sample videos (backend unavailable)');
@@ -174,8 +169,7 @@ const VideoSection: React.FC<VideoSectionProps> = ({ activeTab, videos: propVide
                             height={200}
                             width={cardWidth}
                             play={true}
-                            videoId={video.url.split('/embed/')[1]}
-                            // 👈 Removed .split('/embed/')[1]
+                            videoId={video.url} // 👈 Removed .split('/embed/')[1]
                             onChangeState={event => {
                               if (event === 'ended') setPlayingVideoId(null);
                             }}
