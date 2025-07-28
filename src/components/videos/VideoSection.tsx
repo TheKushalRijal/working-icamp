@@ -204,7 +204,7 @@ const VideoSection: React.FC<VideoSectionProps> = ({ activeTab, videos: propVide
 const styles = StyleSheet.create({
   container: {
     marginTop: -32,
-    paddingHorizontal: 0,
+    paddingHorizontal: -0,
   },
   sectionTitle: {
     fontSize: 20,

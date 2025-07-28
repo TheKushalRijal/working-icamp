@@ -9,19 +9,28 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 import RidersApp from '../../rideshare/rideshare';
+import AntDesign from 'react-native-vector-icons/AntDesign';
+import Feather from 'react-native-vector-icons/Feather';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialIcons from "react-native-vector-icons/MaterialIcons"
+const IconSets = {
+ AntDesign,
+  Feather,
+  Ionicons,
+  MaterialIcons,
+}as const;
+
 const CommunityLinks: React.FC = () => {
   const navigation = useNavigation<any>(); // Add typing if you have defined your navigation types
 
   const links = [
-    { name: 'Ride Share', icon: 'aim', route: 'Rides' },
-   // <Tab.Screen name="Rides" component={RidersApp} />
-
-    { name: 'Login', icon: '', route: 'Login' },
-    { name: 'Housing', icon: 'home', route: 'Housing' },
-    { name: 'Jobs', icon: 'briefcase', route: 'Jobs' },
-    { name: 'Marketplace', icon: 'shopping-bag', route: 'Marketplace' },
-    { name: 'Resources', icon: 'book', route: 'Resources' },
-  ];
+    { name: 'Ride Share', iconSet: 'AntDesign', iconName: 'car', route: 'Rides' },
+    { name: 'Login', iconSet: 'MaterialIcons', iconName: 'login', route: 'Login' },
+    { name: 'Housing', iconSet: 'Feather', iconName: 'home', route: 'Housing' },
+    { name: 'Jobs', iconSet: 'Feather', iconName: 'briefcase', route: 'Jobs' },
+    { name: 'Marketplace', iconSet: 'Feather', iconName: 'shopping-bag', route: 'Marketplace' },
+    { name: 'Resources', iconSet: 'Feather', iconName: 'book', route: 'Resources' },
+  ]as const;
 
   return (
     <View style={styles.wrapper}>
@@ -31,17 +40,21 @@ const CommunityLinks: React.FC = () => {
         style={styles.container}
         contentContainerStyle={styles.contentContainer}
       >
-        {links.map((link, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.linkButton}
-            onPress={() => navigation.navigate(link.route)}
-            activeOpacity={0.7}
-          >
-            <Icon name={link.icon} size={16} color="#fff" style={styles.icon} />
-            <Text style={styles.linkText}>{link.name}</Text>
-          </TouchableOpacity>
-        ))}
+        {links.map((link, index) => {
+  const IconComponent = IconSets[link.iconSet] || Feather; // fallback
+  return (
+    <TouchableOpacity
+      key={index}
+      style={styles.linkButton}
+      onPress={() => navigation.navigate(link.route)}
+      activeOpacity={0.7}
+    >
+      <IconComponent name={link.iconName} size={16} color="#fff" style={styles.icon} />
+      <Text style={styles.linkText}>{link.name}</Text>
+    </TouchableOpacity>
+  );
+})}
+
       </ScrollView>
     </View>
   );

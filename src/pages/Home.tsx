@@ -81,10 +81,14 @@ const getFromBackend = async () => {
 
   try {
     const homeResponse = await axios.get(`${BASE_URL}/home/`, {
+      timeout: 10, // 10 second timeout
+
    //   withCredentials: true,
     });
 
     const videosResponse = await axios.get(`${BASE_URL}/videos/`, {
+      timeout: 10, // 10 second timeout
+
    //   withCredentials: true,
     });
     console.log("Home Data:", homeResponse.data);
@@ -227,8 +231,9 @@ useEffect(() => {
         }
   
         // Then try fetching from backend
-        const response = await axios.get(`${BASE_URL}/announcements/`);
-        timeout: 1000
+       const response = await axios.get(`${BASE_URL}/announcements/`, {
+  timeout: 10, // 10 seconds in milliseconds
+});
 
         if (response?.data) {
           setAnnouncement(response.data);

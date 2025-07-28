@@ -250,7 +250,7 @@ const ProfilePage = () => {
           {/* Quick Actions */}
           <View style={styles.quickActions}>
             <TouchableOpacity style={styles.actionButton}>
-              <MaterialIcon name="MessageCircle" size={20} color="#4F46E5" />
+              <MaterialIcon name="message" size={20} color="#4F46E5" />
               <Text style={styles.actionText}>Messages</Text>
             </TouchableOpacity>
 

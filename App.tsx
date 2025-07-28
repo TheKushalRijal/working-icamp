@@ -35,6 +35,8 @@ function AppNavigator() {
       {/* Show BottomNav as the main app shell for authenticated users */}
 
       <Stack.Screen name="Main" component={BottomNav} />
+      <Stack.Screen name="Lawyers" component={LawyersScreen} />
+
       <Stack.Screen name="Rides" component={RidersApp} />
 
       {/* Screens outside BottomNav (like auth & onboarding) */}
@@ -54,7 +56,6 @@ function AppNavigator() {
       <Stack.Screen name="Test" component={Test} />
       <Stack.Screen name="Outside" component={Outside} />
       <Stack.Screen name="Upload" component={UploadPost} />
-      <Stack.Screen name="Lawyers" component={LawyersScreen} />
 
 
 
