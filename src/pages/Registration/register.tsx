@@ -86,7 +86,7 @@ const Register: React.FC = () => {
           headers: { 'Content-Type': 'application/json' },
         }
       );
-
+console.log(formData)
       if (response.status === 200) {
         // Store full name if needed in AsyncStorage or context, here just local state
         setVerificationStep(true);
@@ -135,16 +135,21 @@ const Register: React.FC = () => {
 
     try {
       const response = await axios.post(
-        `${DEV_BASE_URL}/verify_code/`,
-        { email: formData.email, code },
-        {
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
+    `${DEV_BASE_URL}/verify_code/`,
+    {
+      email: formData.email,
+      otp: code,
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
       console.log("login route is working from here ")
       if (response.data.access) { // Check for JWT token
        //  Save tokens securely
-       await AsyncStorage.setItem('accessToken', response.data.access);
+      await AsyncStorage.setItem('accessToken', response.data.access);
       await AsyncStorage.setItem('refreshToken', response.data.refresh);
       await AsyncStorage.setItem('userData', JSON.stringify(response.data.user));
 
@@ -249,8 +254,8 @@ const Register: React.FC = () => {
             <View style={styles.logoCircle}>
               <Text style={styles.logoText}>N</Text>
             </View>
-            <Text style={styles.title}>Join Our Community</Text>
-            <Text style={styles.subtitle}>Connect with Nepali students across the USA</Text>
+            <Text style={styles.title}>Icamp</Text>
+                      <Text style={styles.subtitle}>Get all information as Nepali students</Text>
           </View>
 
           {errors.length > 0 && (
@@ -279,7 +284,7 @@ const Register: React.FC = () => {
               style={styles.input}
               value={formData.email}
               onChangeText={text => handleChange('email', text)}
-              placeholder="your.university@edu"
+              placeholder="Your Email"
               keyboardType="email-address"
               autoCapitalize="none"
               editable={!isLoading}

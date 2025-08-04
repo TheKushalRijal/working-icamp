@@ -28,7 +28,7 @@ interface Store {
   distance: string;
   rating: number;
   reviewCount: number;
-  categories: string[];
+  categories: (string | { name: string })[]; // <-- allow both
   openStatus: string;
   phone: string;
   hours: string;
@@ -263,11 +263,13 @@ const StoresNearMe = () => {
       
         
         <View style={styles.categoriesContainer}>
-          {item.categories.map(category => (
-            <View key={category} style={styles.categoryBadge}>
-              <Text style={styles.categoryText}>{category}</Text>
-            </View>
-          ))}
+          {item.categories.map((category, idx) => (
+  <View key={typeof category === 'string' ? category : category.name || idx} style={styles.categoryBadge}>
+    <Text style={styles.categoryText}>
+      {typeof category === 'string' ? category : category.name}
+    </Text>
+  </View>
+))}
         </View>
       </View>
     </View>

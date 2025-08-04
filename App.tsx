@@ -2,6 +2,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { AuthProvider } from './src/context/AuthContent';
 import { EventProvider } from './src/context/EventContext';
@@ -29,10 +30,15 @@ import BottomNav from './src/components/navigation/BottomNav';
 import CommunityGroupsScreen from './src/profileredirect/important/groups';
 const Stack = createNativeStackNavigator();
 import LawyersScreen from './src/profileredirect/important/lawyers';
+import AuthLoading from './src/pages/Registration/splashscreen';
+
+
 function AppNavigator() {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+     <Stack.Navigator initialRouteName="AuthLoading" screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="AuthLoading" component={AuthLoading} />
       {/* Show BottomNav as the main app shell for authenticated users */}
+      <Stack.Screen name="Login" component={Login} />
 
       <Stack.Screen name="Main" component={BottomNav} />
       <Stack.Screen name="Lawyers" component={LawyersScreen} />
@@ -41,7 +47,6 @@ function AppNavigator() {
 
       {/* Screens outside BottomNav (like auth & onboarding) */}
       <Stack.Screen name="Landing" component={LandingRedirect} />
-      <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="Register" component={Register} />
 
       {/* Optional: other screens you want modally or outside of tabs */}
@@ -66,12 +71,14 @@ function AppNavigator() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <EventProvider>
-        <NavigationContainer>
-          <AppNavigator />
-        </NavigationContainer>
-      </EventProvider>
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <EventProvider>
+          <NavigationContainer>
+            <AppNavigator />
+          </NavigationContainer>
+        </EventProvider>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }

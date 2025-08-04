@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState,useEffect } from 'react';
 import {
   View,
   Text,
@@ -13,7 +13,9 @@ import { setItem } from '../../utils/asyncStorage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../context/AuthContent';
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DEV_BASE_URL } from '@env';
+import axios from 'axios';
 // Define the navigation param list
 type RootStackParamList = {
   Auth: undefined;
@@ -39,38 +41,61 @@ const Login: React.FC = () => {
     return '';
   };
 
+
+ useEffect(() => {
+    const checkLogin = async () => {
+      const token = await AsyncStorage.getItem('accessToken');
+      if (token) {
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        });
+      }
+    };
+    checkLogin();
+  }, [navigation]);
+
+
   const handleSubmit = async () => {
     setIsLoading(true);
     setError('');
 
-    try {
-      const response = await fetch('https://api.sapana.xyz/user_login/', {
-        method: 'POST',
+     try {
+    const response = await axios.post(
+      `${DEV_BASE_URL}/loginroute/`,
+      { email, password }, // send as object, not JSON string
+      {
         headers: {
           'Content-Type': 'application/json',
           'X-CSRFToken': getCSRFToken(),
         },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        // Use the safe AsyncStorage utility
-        const success = await setItem('token', data.token);
-        if (success) {
-          // Use the AuthContext login method
-          await login(data.token);
-          navigation.reset({
-            index: 0,
-            routes: [{ name: 'Home' }],
-          });
-        } else {
-          setError('Failed to save authentication token');
-        }
-      } else {
-        setError(data.error || 'Login failed');
       }
+    );
+
+    const data = response.data;
+
+       if (
+  response.status === 200 &&
+  data.access &&
+  data.refresh &&
+  data.user
+) {
+  await AsyncStorage.setItem('accessToken', data.access);
+  await AsyncStorage.setItem('refreshToken', data.refresh);
+  await AsyncStorage.setItem('userData', JSON.stringify(data.user));
+  const success = await setItem('token', data.access);
+  if (success) {
+    await login(data.access);
+    navigation.reset({
+      index: 0,
+      routes: [{ name: 'Main' }],
+    });
+  } else {
+    setError('Failed to save authentication token');
+  }
+} else {
+  setError(data.error || 'Login failed: Invalid credentials or server error.');
+}
     } catch (err) {
       console.error('Login error:', err);
       setError('Something went wrong. Please try again.');
@@ -90,8 +115,8 @@ const Login: React.FC = () => {
             {/* Replace this with a proper SVG or Image if needed */}
             <Text style={styles.logoText}>N</Text>
           </View>
-          <Text style={styles.title}>Nepali Student Hub</Text>
-          <Text style={styles.subtitle}>Connect with peers across the USA</Text>
+          <Text style={styles.title}>Icamp</Text>
+          <Text style={styles.subtitle}>Get all information as Nepali students</Text>
         </View>
 
         {error ? (
@@ -107,7 +132,7 @@ const Login: React.FC = () => {
             onChangeText={setEmail}
             keyboardType="email-address"
             autoCapitalize="none"
-            placeholder="your.university@edu"
+            placeholder="Your Email"
             style={styles.input}
             editable={!isLoading}
           />
