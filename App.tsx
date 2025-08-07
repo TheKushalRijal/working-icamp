@@ -31,7 +31,7 @@ import CommunityGroupsScreen from './src/profileredirect/important/groups';
 const Stack = createNativeStackNavigator();
 import LawyersScreen from './src/profileredirect/important/lawyers';
 import AuthLoading from './src/pages/Registration/splashscreen';
-
+import DiscountApp from './src/profileredirect/community/discounts';
 
 function AppNavigator() {
   return (
@@ -63,6 +63,7 @@ function AppNavigator() {
       <Stack.Screen name="Upload" component={UploadPost} />
 
 
+      <Stack.Screen name="Discounts" component={DiscountApp} />
 
     </Stack.Navigator>
   );

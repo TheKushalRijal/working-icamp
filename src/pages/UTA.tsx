@@ -10,8 +10,8 @@ import {
   Dimensions,
   SafeAreaView
 } from 'react-native';
-//import { LinearGradient } from 'expo-linear-gradient';
 import LinearGradient from 'react-native-linear-gradient';
+import TopNav from '../components/navigation/TopNav'; // Adjust path if needed
 
 const { width } = Dimensions.get('window');
 
@@ -27,6 +27,7 @@ const Outside = () => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
+      <TopNav title="UTA Info" />
       <ScrollView contentContainerStyle={styles.container}>
         {/* Welcome Section */}
         <LinearGradient

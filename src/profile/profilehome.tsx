@@ -249,12 +249,16 @@ const ProfilePage = () => {
 
           {/* Quick Actions */}
           <View style={styles.quickActions}>
-            <TouchableOpacity style={styles.actionButton}>
-              <MaterialIcon name="message" size={20} color="#4F46E5" />
-              <Text style={styles.actionText}>Messages</Text>
-            </TouchableOpacity>
+            
+                            <TouchableOpacity
+                  style={styles.actionButton}
+                  onPress={() => navigation.navigate('Discounts')}
+                >
+                  <MaterialIcon name="message" size={20} color="#4F46E5" />
+                  <Text style={styles.actionText}>Discounts</Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity 
+              <TouchableOpacity a
               style={styles.actionButton}
               onPress={() => navigation.navigate('Lawyers')}
             >              
