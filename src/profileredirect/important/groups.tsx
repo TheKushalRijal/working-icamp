@@ -96,7 +96,7 @@ const CommunityGroupsScreen = () => {
       id: 'f2',
       name: 'Helpful Nepali Community Groups',
       platform: 'telegram',
-      description: 'Worldwide scam alerts in multiple languages',
+      description: 'All USA nepali community groups',
       link: 'https://www.facebook.com/groups/usnepalhelpnetwork',
       icon: 'telegram',
      
@@ -106,7 +106,16 @@ const CommunityGroupsScreen = () => {
       name: 'US-Nepal Help Network',
       platform: 'facebook',
       description: 'Nepali Help Group All Over USA',
-      link: 'https://www.facebook.com/groups/usnepalhelpnetwork',
+      link: 'https://www.facebook.com/groups/usnepalheaxlpnetwork',
+      icon: 'facebook',
+      
+    },
+    {
+      id: 'f4',
+      name: 'Texas Nepali Mandir/society',
+      platform: 'facebook',
+      description: 'Nepali community in Texas',
+      link: 'https://www.facebook.com/groups/usnepalheaxlpnetwork',
       icon: 'facebook',
       
     },
@@ -325,16 +334,7 @@ const CommunityGroupsScreen = () => {
         </View>
 
         {/* Safety Notice */}
-        <View style={styles.safetyNotice}>
-          <Ionicons name="shield-checkmark" size={20} color="#3498db" />
-          <View style={styles.noticeTextContainer}>
-            <Text style={styles.safetyNoticeTitle}>Safety First</Text>
-            <Text style={styles.safetyNoticeText}>
-              These are external communities. ScamShield verifies them but doesn't manage them.
-              Never share personal or financial information in these groups.
-            </Text>
-          </View>
-        </View>
+        
       </ScrollView>
     </SafeAreaView>
   );

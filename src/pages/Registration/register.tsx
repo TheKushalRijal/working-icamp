@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef,useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,9 @@ import axios from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import UniversitySelector from './selectuniversity';
+
+
 //import { DEV_BASE_URL } from '@env';
 const DEV_BASE_URL = 'http://10.0.2.2:8000';
 
@@ -31,6 +34,7 @@ interface FormData {
   email: string;
   password: string;
   confirmPassword: string;
+  university: string;
 }
 
 const Register: React.FC = () => {
@@ -41,6 +45,7 @@ const Register: React.FC = () => {
     email: '',
     password: '',
     confirmPassword: '',
+    university: '',
   });
 
   const [errors, setErrors] = useState<string[]>([]);
@@ -56,6 +61,31 @@ const Register: React.FC = () => {
   const handleChange = (name: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
+
+  const [selectedUniversity, setSelectedUniversity] = useState('');
+
+
+
+
+
+  
+useEffect(() => {
+  async function fetchUniversity() {
+    try {
+      const university = await AsyncStorage.getItem('@selected_university');
+      if (university) {
+        setFormData(prev => ({ ...prev, university }));
+        setSelectedUniversity(university); // if you also keep selectedUniversity state
+      }
+    } catch (error) {
+      console.error('Failed to load university from storage:', error);
+    }
+  }
+  fetchUniversity();
+}, []);
+
+
+
 
   const validateForm = (): string[] => {
     const newErrors: string[] = [];
@@ -86,7 +116,7 @@ const Register: React.FC = () => {
           headers: { 'Content-Type': 'application/json' },
         }
       );
-console.log(formData)
+          console.log("this is the from data with university",formData)
       if (response.status === 200) {
         // Store full name if needed in AsyncStorage or context, here just local state
         setVerificationStep(true);
@@ -251,9 +281,7 @@ console.log(formData)
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.card}>
           <View style={styles.header}>
-            <View style={styles.logoCircle}>
-              <Text style={styles.logoText}>N</Text>
-            </View>
+            
             <Text style={styles.title}>Icamp</Text>
                       <Text style={styles.subtitle}>Get all information as Nepali students</Text>
           </View>
@@ -317,6 +345,27 @@ console.log(formData)
               autoCapitalize="none"
               editable={!isLoading}
             />
+
+
+
+
+ <View>
+      {/* other form inputs */}
+
+      <UniversitySelector
+        selectedUniversity={selectedUniversity}
+        onSelectUniversity={setSelectedUniversity}
+      />
+
+      {/* other form inputs */}
+    </View>
+
+
+
+
+
+
+
 
             <TouchableOpacity
               style={[styles.button, isLoading && styles.buttonDisabled]}

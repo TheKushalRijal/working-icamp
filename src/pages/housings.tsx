@@ -69,11 +69,11 @@ const UTAHousingApp = () => {
   useEffect(() => {
     const fetchHousing = async () => {
       try {
-        const response = await axios.get(`${DEV_BASE_URL}/housings/`, {
-          timeout: 1000, // 1 second timeout
+        const response = await axios.get(`${DEV_BASE_URL}/housingss/`, {
+          timeout: 100, 
         });
   
-        const data = response.data; // Axios puts response in `.data`
+        const data = response.data; 
         setPosts(data);
         setFilteredPosts(data);
       } catch (error) {

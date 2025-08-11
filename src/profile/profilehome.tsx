@@ -38,6 +38,7 @@ type RootStackParamList = {
   Rides: undefined;
   ScamShieldApp: undefined;
   Lawyers:undefined;
+  Discounts: undefined;
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -121,6 +122,8 @@ const ProfilePage = () => {
     { icon: 'school', title: "University Info", description: "Campus resources, academic calendar", route: "Outside", color: "#7C3AED" },
     { icon: 'receipt', title: "Visa Guidance", description: "F1 visa tips, OPT/CPT info", route: "Visa", color: "#059669" },
     { icon: 'library-books', title: "Student Resources", description: "Tutoring, career services", route: "Resources", color: "#D97706" },
+    { icon: 'library-books', title: "Student Discounts", description: "Discounts for students only", route: "Discounts", color: "#D97706" },
+
     { icon: 'warning', title: "Avoid Scams", description: "Common frauds to watch for", route: "ScamShieldApp", color: "#DC2626" }
   ];
 
@@ -224,10 +227,13 @@ const ProfilePage = () => {
       >
         {/* Profile Content */}
         <View style={styles.content}>
+                  {/* Profile Content */}
+
           <View style={styles.profileInfo}>
             <Text style={styles.name}>{profileData.fullName}</Text>
             <Text style={styles.university}>{profileData.university}</Text>
-            
+                              {/* Profile Content 
+
             <View style={styles.statsContainer}>
               <View style={styles.statItem}>
                 <Text style={styles.statNumber}>{profileData.years}</Text>
@@ -242,6 +248,7 @@ const ProfilePage = () => {
                 <Text style={styles.statLabel}>Location</Text>
               </View>
             </View>
+            */}
           </View>
 
           {/* Connection Status Indicator */}
@@ -255,7 +262,7 @@ const ProfilePage = () => {
                   onPress={() => navigation.navigate('Discounts')}
                 >
                   <MaterialIcon name="message" size={20} color="#4F46E5" />
-                  <Text style={styles.actionText}>Discounts</Text>
+                  <Text style={styles.actionText}>Students discounts</Text>
                 </TouchableOpacity>
 
               <TouchableOpacity a

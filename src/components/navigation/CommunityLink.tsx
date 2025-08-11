@@ -26,10 +26,7 @@ const CommunityLinks: React.FC = () => {
   const links = [
     { name: 'Ride Share', iconSet: 'AntDesign', iconName: 'car', route: 'Rides' },
     { name: 'Login', iconSet: 'MaterialIcons', iconName: 'login', route: 'Login' },
-    { name: 'Housing', iconSet: 'Feather', iconName: 'home', route: 'Housing' },
-    { name: 'Jobs', iconSet: 'Feather', iconName: 'briefcase', route: 'Jobs' },
-    { name: 'Marketplace', iconSet: 'Feather', iconName: 'shopping-bag', route: 'Marketplace' },
-    { name: 'Resources', iconSet: 'Feather', iconName: 'book', route: 'Resources' },
+    { name: 'Housing', iconSet: 'Feather', iconName: 'home', route: 'Housings' },
   ]as const;
 
   return (

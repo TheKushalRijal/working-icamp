@@ -6,30 +6,19 @@ import axios from 'axios';
 import { DEV_BASE_URL } from '@env';
 // Fallback hardcoded data
 const fallbackUniversityLawyer = {
-  name: 'Jane Doe',
-  email: 'jane.doe@university.edu',
-  phone: '+1-800-123-4567',
+ name: '',
+    email: '',
+    phone: '',
 };
 
 const fallbackExternalLawyers = [
   {
     id: '1',
-    name: 'John Smith',
-    email: 'john.smith@lawfirm.com',
-    phone: '+1-800-555-1234',
+    name: 'Rijal Law',
+    email: 'info@rijallaw.com',
+    phone: '18559974525',
   },
-  {
-    id: '2',
-    name: 'Maria Garcia',
-    email: 'maria.garcia@legalhelp.org',
-    phone: '+1-800-555-5678',
-  },
-  {
-    id: '3',
-    name: 'Michael Chen',
-    email: 'mchen@justicehub.com',
-    phone: '+1-800-555-9012',
-  },
+  
 ];
 
 const ContactButton = ({ label, value, isEmail }) => (

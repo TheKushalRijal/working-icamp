@@ -27,25 +27,49 @@ const VisaPage = () => {
     'Keep passport valid at all times',
     'Report address changes within 10 days',
     'Apply for OPT before program end date',
-    'Attend the school you were approved for'
+    'Consult DSO before changing status',
+    'Keep I-20 updated with current program info',
+
   ];
 
   const f1Donts = [
-    'Work off-campus without authorization',
+   'Never get involved in fights or crimes',
+
     'Let your I-20 expire',
     'Violate your status (drugs, crimes, etc.)',
     'Stay beyond grace period (60 days after program)',
-    'Engage in unauthorized studies'
+     'Work off-campus without authorization',
   ];
 
   const renewalSteps = [
-    { step: 1, title: "Check Eligibility", description: "Ensure you meet requirements for visa renewal" },
-    { step: 2, title: "Complete DS-160", description: "Fill out the online nonimmigrant visa application" },
-    { step: 3, title: "Pay MRV Fee", description: "Pay the machine-readable visa fee ($185 for F-1)" },
-    { step: 4, title: "Schedule Interview", description: "Book appointment at US embassy/consulate" },
-    { step: 5, title: "Prepare Documents", description: "I-20, transcripts, financial proof, etc." },
-    { step: 6, title: "Attend Interview", description: "Be prepared to explain your continued studies" },
-  ];
+  {
+    step: 1,
+    title: "H-1B Visa",
+    description: "Work for a US employer who can sponsor you for an employment-based Green Card."
+  },
+  {
+    step: 2,
+    title: "Marriage to a US Citizen",
+    description: "Obtain a Green Card through marriage to a US citizen with a bona fide relationship."
+  },
+  {
+    step: 3,
+    title: "O-1B Visa",
+    description: "For individuals with extraordinary ability in arts or entertainment; can lead to a Green Card."
+  },
+  {
+    step: 4,
+    title: "EB-5 Investor Visa",
+    description: "Invest $800,000+ in a US business that creates jobs to qualify for a Green Card."
+  },
+  {
+    step: 5,
+    title: "EB-2 National Interest Waiver (NIW)",
+    description: "Self-petition for a Green Card if you have advanced skills and your work benefits the US."
+  },
+  
+];
+
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -82,7 +106,7 @@ const VisaPage = () => {
               onPress={() => setActiveTab('renewal')}
             >
               <Icon name="file-text" size={16} color={activeTab === 'renewal' ? 'white' : '#4a5568'} />
-              <Text style={[styles.tabText, activeTab === 'renewal' && styles.activeTabText]}>Renewal</Text>
+              <Text style={[styles.tabText, activeTab === 'renewal' && styles.activeTabText]}>PR process</Text>
             </TouchableOpacity>
           </View>
         ) : (
@@ -110,7 +134,7 @@ const VisaPage = () => {
               onPress={() => setActiveTab('renewal')}
             >
               <Text style={activeTab === 'renewal' ? styles.activeMobileTabText : styles.mobileTabText}>
-                Renewal
+                PR process
               </Text>
               {activeTab === 'renewal' && <View style={styles.tabIndicator} />}
             </TouchableOpacity>
@@ -204,8 +228,8 @@ const VisaPage = () => {
 
           {activeTab === 'renewal' && (
             <View>
-              <Text style={styles.sectionTitle}>Visa Renewal Process</Text>
-              <Text style={styles.sectionSubtitle}>Follow these steps to renew your visa</Text>
+              <Text style={styles.sectionTitle}>Ways of getting PR in USA</Text>
+              <Text style={styles.sectionSubtitle}>These metgods lets you get pr</Text>
               
               <View style={styles.stepsContainer}>
                 {renewalSteps.map((step) => (
@@ -222,25 +246,7 @@ const VisaPage = () => {
                 ))}
               </View>
 
-              <View style={[styles.card, { marginTop: 16 }]}>
-                <Text style={styles.cardTitle}>
-                  <Icon name="info" size={16} color="#805ad5" /> Tips for Nepali Students
-                </Text>
-                <View style={styles.list}>
-                  {[
-                    'Renew in Nepal during breaks (3-4 weeks processing)',
-                    'Show strong ties to Nepal (family, property, etc.)',
-                    'Carry original bank statements',
-                    'Prepare to explain academic difficulties',
-                    'Third-country renewals are possible but riskier'
-                  ].map((item, index) => (
-                    <View key={index} style={styles.listItem}>
-                      <View style={[styles.listBullet, { backgroundColor: '#805ad5' }]} />
-                      <Text style={styles.listText}>{item}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
+              
             </View>
           )}
         </View>

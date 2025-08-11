@@ -143,9 +143,9 @@ const StoresNearMe = () => {
       try {
         // Try to fetch from backend first
         console.log('Attempting to fetch stores from backend...');
-        const response = await axios.get(`${BASE_URL}/stores/`, {
+        const response = await axios.get(`${BASE_URL}/storess/`, {
          // withCredentials: true,
-          timeout: 1000, // 10 second timeout
+          timeout: 100, // 10 second timeout
         });
         console.log(response)
         if (response.data && Array.isArray(response.data) && response.data.length > 0) {
