@@ -96,7 +96,7 @@ const CommunityGroupsScreen = () => {
       id: 'f2',
       name: 'Helpful Nepali Community Groups',
       platform: 'telegram',
-      description: 'All USA nepali community groups',
+      description: 'Worldwide scam alerts in multiple languages',
       link: 'https://www.facebook.com/groups/usnepalhelpnetwork',
       icon: 'telegram',
      
@@ -106,16 +106,7 @@ const CommunityGroupsScreen = () => {
       name: 'US-Nepal Help Network',
       platform: 'facebook',
       description: 'Nepali Help Group All Over USA',
-      link: 'https://www.facebook.com/groups/usnepalheaxlpnetwork',
-      icon: 'facebook',
-      
-    },
-    {
-      id: 'f4',
-      name: 'Texas Nepali Mandir/society',
-      platform: 'facebook',
-      description: 'Nepali community in Texas',
-      link: 'https://www.facebook.com/groups/usnepalheaxlpnetwork',
+      link: 'https://www.facebook.com/groups/usnepalhelpnetwork',
       icon: 'facebook',
       
     },

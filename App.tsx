@@ -32,6 +32,8 @@ const Stack = createNativeStackNavigator();
 import LawyersScreen from './src/profileredirect/important/lawyers';
 import AuthLoading from './src/pages/Registration/splashscreen';
 import DiscountApp from './src/profileredirect/community/discounts';
+import NameDescriptionList from './src/profileredirect/important/scammers';
+
 
 function AppNavigator() {
   return (
@@ -54,7 +56,7 @@ function AppNavigator() {
       <Stack.Screen name="Store" component={StoresNearMe} />
       <Stack.Screen name="Personal" component={PersonalInfoPage} />
       <Stack.Screen name="Visa" component={VisaPage} />
-      <Stack.Screen name="Scams" component={ScammersPage} />
+      <Stack.Screen name="Scams" component={NameDescriptionList} />
       <Stack.Screen name="Groups" component={CommunityGroupsScreen} />
       <Stack.Screen name="UploadPost" component={UploadPost} />
       <Stack.Screen name="Resources" component={UniversityResourcesPage} />
