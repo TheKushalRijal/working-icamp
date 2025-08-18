@@ -11,6 +11,11 @@ import UserPost from '../components/UserPost';
   //import { DEV_BASE_URL, PROD_BASE_URL } from '@env';
 import { PROD_BASE_URL } from '@env';
 const DEV_BASE_URL = 'http://10.0.2.2:8000';
+//import BASE_URL from '@env';
+
+
+
+
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // Define the navigation type
 type RootStackParamList = {
@@ -77,7 +82,6 @@ const Home: React.FC = () => {
 
 
 const getFromBackend = async () => {
-  const BASE_URL = DEV_BASE_URL;
 
   try {
     const homeResponse = await axios.get(`${BASE_URL}/home/`, {

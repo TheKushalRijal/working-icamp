@@ -33,6 +33,9 @@ import LawyersScreen from './src/profileredirect/important/lawyers';
 import AuthLoading from './src/pages/Registration/splashscreen';
 import DiscountApp from './src/profileredirect/community/discounts';
 import NameDescriptionList from './src/profileredirect/important/scammers';
+import splitmain from './src/split/splitmain';
+
+
 
 
 function AppNavigator() {
@@ -41,6 +44,7 @@ function AppNavigator() {
       <Stack.Screen name="AuthLoading" component={AuthLoading} />
       {/* Show BottomNav as the main app shell for authenticated users */}
       <Stack.Screen name="Login" component={Login} />
+      <Stack.Screen name="splitmain" component={splitmain} />
 
       <Stack.Screen name="Main" component={BottomNav} />
       <Stack.Screen name="Lawyers" component={LawyersScreen} />

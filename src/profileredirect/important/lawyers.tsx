@@ -3,7 +3,11 @@ import { View, Text, FlatList, StyleSheet, Linking, TouchableOpacity, ScrollView
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import TopNav from '../../components/navigation/TopNav';
 import axios from 'axios';
+//import { DEV_BASE_URL } from '@env';
+import { BASE_URL } from '@env';
 import { DEV_BASE_URL } from '@env';
+
+
 // Fallback hardcoded data
 const fallbackUniversityLawyer = {
  name: '',
@@ -50,7 +54,7 @@ const LawyersScreen = () => {
           axios.get('https://your-backend-api.com/external-lawyers'),
         ]);
 
-        const response = await axios.get(`${DEV_BASE_URL}/universitylawyers/`, {
+        const response = await axios.get(`${BASE_URL}/universitylawyers/`, {
           timeout: 1000, // 1 second timeout
         });
 
