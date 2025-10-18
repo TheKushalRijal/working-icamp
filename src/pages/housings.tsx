@@ -5,6 +5,9 @@ import Feather from 'react-native-vector-icons/Feather';
 import TopNav from '../components/navigation/TopNav';
 import { DEV_BASE_URL } from '@env';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { MMKV  } from 'react-native-mmkv';
+import SQLite from 'react-native-sqlite-storage';
 
 interface Housing {
   id: number;
@@ -66,26 +69,98 @@ const UTAHousingApp = () => {
   const [priceFilter, setPriceFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
 
-  useEffect(() => {
-    const fetchHousing = async () => {
-      try {
-        const response = await axios.get(`${DEV_BASE_URL}/housingss/`, {
-          timeout: 100, 
-        });
-  
-        const data = response.data; 
-        setPosts(data);
-        setFilteredPosts(data);
-      } catch (error) {
-        console.warn('Backend fetch failed, falling back to hardcoded data: for housings', error);
-        setPosts(fallbackData);
-        setFilteredPosts(fallbackData);
-      }
-    };
-  
-    fetchHousing();
-  }, []);
+const [selectedUniversity, setSelectedUniversity] = useState<string | null>(null);
 
+
+
+
+// Fetch housing data from SQLite for the selected university
+const fetchHousingFromSQLite = async (): Promise<Housing[]> => {
+  const db = await SQLite.openDatabase({ name: 'university.db', location: 'default' });
+  return new Promise((resolve, reject) => {
+    db.transaction(tx => {
+      tx.executeSql(
+        `SELECT id, name, image, price, website, campusType FROM housing`,
+        [], // No parameters needed
+        (txObj, { rows }) => {
+          const result: Housing[] = [];
+          for (let i = 0; i < rows.length; i++) {
+            result.push(rows.item(i));
+          }
+          resolve(result);
+        },
+        (txObj, error) => {
+          reject(error);
+          return false;
+        }
+      );
+    });
+  });
+};
+
+
+
+
+
+
+ useEffect(() => {
+  const getUniversity = async () => {
+    const uni = await AsyncStorage.getItem("@selected_university");
+    setSelectedUniversity(uni);
+  };
+  getUniversity();
+}, []);
+
+
+useEffect(() => {
+  console.log("SQLite error or no data data here, will try backend next.", );
+
+  const fetchHousing = async () => {
+    //if (!selectedUniversity) return;
+
+    // 1️⃣ Try SQLite first
+    try {
+      const sqliteData = await fetchHousingFromSQLite();
+      if (sqliteData && sqliteData.length > 0) {
+        setPosts(sqliteData);
+        setFilteredPosts(sqliteData);
+        console.log(`✅ Housing data for  this is where housing data is loaded from database${selectedUniversity} loaded from SQLite`, sqliteData);
+        return;
+      }
+    } catch (sqliteError) {
+      console.warn("SQLite error or no data, will try backend next.", sqliteError);
+    }
+
+    // 2️⃣ Try backend if SQLite fails or is empty
+    try {
+      const response = await axios.get(
+        `${DEV_BASE_URL}/housingsss/?university=${selectedUniversity}`,
+        { timeout: 1000 }
+      );
+      if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+        setPosts(response.data);
+        setFilteredPosts(response.data);
+        console.log(`✅ Housing data for ${selectedUniversity} fetched from backend`);
+        return;
+      }
+    } catch (error) {
+      console.error(`❌ Error fetching housing data for ${selectedUniversity} from backend:`, error);
+    }
+
+    // 3️⃣ Fallback to hardcoded data
+    setPosts(fallbackData);
+    setFilteredPosts(fallbackData);
+    console.warn(`⚠️ Using fallback housing data for ${selectedUniversity}`);
+  };
+
+
+
+    fetchHousing();
+  
+
+}, [selectedUniversity]);
+
+// read this code here
 
 
 
@@ -392,3 +467,50 @@ filterButtonText: {
 });
 
 export default UTAHousingApp;
+
+/**
+ * UTAHousingApp Component Documentation
+ * ====================================
+ * 
+ * Purpose:
+ * --------
+ * Displays and manages housing options for university students with filtering and search capabilities.
+ * 
+ * Data Flow:
+ * ----------
+ * 1. Data Fetching (3-tier approach):
+ *    - First tries to fetch from SQLite local database
+ *    - If SQLite fails, attempts to fetch from backend API
+ *    - Falls back to hardcoded data if both above fail
+ * 
+ * Key Features:
+ * ------------
+ * - Search functionality for housing by name
+ * - Filtering by campus type (on/off campus)
+ * - Price range filtering
+ * - Dynamic UI with expandable filters
+ * - Direct links to housing websites
+ * - Responsive card-based layout
+ * 
+ * State Management:
+ * ----------------
+ * - posts: Main housing data array
+ * - filteredPosts: Filtered subset of housing data
+ * - searchTerm: Current search input
+ * - campusFilter: Selected campus type filter
+ * - priceFilter: Selected price range filter
+ * - showFilters: Toggle for filter visibility
+ * 
+ * Components:
+ * ----------
+ * - TopNav: Navigation header with filter toggle
+ * - Post: Individual housing card component
+ * - Search bar and filter pickers
+ * 
+ * Performance Considerations:
+ * -------------------------
+ * - Uses local SQLite storage for offline access
+ * - Implements efficient filtering with useEffect
+ * - Lazy loading of images
+ * - Fallback data for network failures
+ */

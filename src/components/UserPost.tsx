@@ -101,37 +101,11 @@ const UserPost: React.FC<UserPostProps> = ({
 
       {/* Actions */}
       <View style={styles.actions}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={onLike}
-        >
-          <Icon
-            name={isLiked ? "heart" : "heart-outline"}
-            size={20}
-            color={isLiked ? "#e53e3e" : "#4a5568"}
-          />
-          <Text style={[styles.actionText, isLiked && styles.likedText]}>
-            {likes}
-          </Text>
-        </TouchableOpacity>
+        
+        
+        
 
-        <TouchableOpacity style={styles.actionButton}>
-          <Icon name="message-circle" size={20} color="#4a5568" />
-          <Text style={styles.actionText}>{comments}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionButton}>
-          <Icon name="share-2" size={20} color="#4a5568" />
-          <Text style={styles.actionText}>{shares}</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity style={styles.actionButton}>
-          <Icon
-            name={isBookmarked ? "bookmark" : "bookmark-outline"}
-            size={20}
-            color={isBookmarked ? "#3182ce" : "#4a5568"}
-          />
-        </TouchableOpacity>
+        
       </View>
     </View>
   );

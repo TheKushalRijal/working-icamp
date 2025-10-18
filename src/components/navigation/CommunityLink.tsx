@@ -13,6 +13,9 @@ import AntDesign from 'react-native-vector-icons/AntDesign';
 import Feather from 'react-native-vector-icons/Feather';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from "react-native-vector-icons/MaterialIcons"
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import SQLite, { SQLTransaction, SQLError } from 'react-native-sqlite-storage';
+
 const IconSets = {
  AntDesign,
   Feather,
@@ -25,9 +28,63 @@ const CommunityLinks: React.FC = () => {
 
   const links = [
     { name: 'Ride Share', iconSet: 'AntDesign', iconName: 'car', route: 'Rides' },
-    { name: 'Login', iconSet: 'MaterialIcons', iconName: 'login', route: 'Login' },
-    { name: 'Housing', iconSet: 'Feather', iconName: 'home', route: 'splitmain' },
+    { name: 'Logout', iconSet: 'MaterialIcons', iconName: 'login', route: 'Login' },
+    { name: 'Bills', iconSet: 'Feather', iconName: 'home', route: 'lawyers' },
   ]as const;
+
+const clearAsyncStorage = async (): Promise<void> => {
+  try {
+    // Clear AsyncStorage
+    await AsyncStorage.clear();
+    console.log('AsyncStorage cleared successfully');
+
+    // Clear SQLite database
+    const db = await SQLite.openDatabase({ 
+      name: 'university.db',
+      location: 'default' 
+    });
+
+    // Drop all tables
+    await new Promise<void>((resolve, reject) => {
+      db.transaction((tx: SQLite.Transaction) => {
+        // This query will get all table names in the database
+        tx.executeSql(
+          "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%'",
+          [],
+          (_: SQLite.Transaction, result: SQLite.ResultSet) => {
+            // For each table found, drop it
+            for (let i = 0; i < result.rows.length; i++) {
+              const tableName = result.rows.item(i).name;
+              tx.executeSql(
+                `DROP TABLE IF EXISTS ${tableName}`,
+                [],
+                () => console.log(`Table ${tableName} dropped`),
+                (_, error) => {
+                  console.error(`Error dropping table ${tableName}:`, error);
+                  return false;
+                }
+              );
+            }
+          }
+        );
+      },
+      (error: SQLite.SQLError) => {
+        console.error('Database clear error:', error);
+        reject(error);
+      },
+      () => {
+        console.log('Database completely cleared');
+        resolve();
+      });
+    });
+
+  } catch (error) {
+    console.error('Error clearing data:', error);
+  }
+};
+
+
+
 
   return (
     <View style={styles.wrapper}>
@@ -43,7 +100,12 @@ const CommunityLinks: React.FC = () => {
     <TouchableOpacity
       key={index}
       style={styles.linkButton}
-      onPress={() => navigation.navigate(link.route)}
+      onPress={() => {
+        if (link.name === 'Logout') {
+          clearAsyncStorage();
+        }
+        navigation.navigate(link.route);
+      }}
       activeOpacity={0.7}
     >
       <IconComponent name={link.iconName} size={16} color="#fff" style={styles.icon} />

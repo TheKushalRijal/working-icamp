@@ -1,7 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Linking } from 'react-native';
 import FeatherIcon from 'react-native-vector-icons/Feather';
 import TopNav from '../../components/navigation/TopNav';
+import SQLite from 'react-native-sqlite-storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import { DEV_BASE_URL } from '@env';
 
 interface Resource {
   icon: string;
@@ -10,7 +14,8 @@ interface Resource {
   link?: string;
 }
 
-const resources: Resource[] = [
+// Move existing resources array to fallbackData
+const fallbackData: Resource[] = [
   {
     icon: 'book-open',
     title: 'Mav Mover',
@@ -50,6 +55,73 @@ const resources: Resource[] = [
 ];
 
 const UniversityResourcesPage = () => {
+  const [resources, setResources] = useState<Resource[]>([]);
+  const [selectedUniversity, setSelectedUniversity] = useState<string | null>(null);
+
+  const fetchResourcesFromSQLite = async (): Promise<Resource[]> => {
+    const db = await SQLite.openDatabase({ name: 'university.db', location: 'default' });
+    return new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          `SELECT icon, title, description, link FROM resource`,
+          [],
+          (txObj, { rows }) => {
+            const resources: Resource[] = [];
+            for (let i = 0; i < rows.length; i++) {
+              resources.push(rows.item(i));
+            }
+            resolve(resources);
+          },
+          (txObj, error) => {
+            reject(error);
+            return false;
+          }
+        );
+      });
+    });
+  };
+
+  useEffect(() => {
+    //AsyncStorage.getItem("@selected_university").then(setSelectedUniversity);
+
+    const fetchResources = async () => {
+      
+
+      // 1️⃣ Try SQLite first
+      try {
+        const sqliteData = await fetchResourcesFromSQLite();
+        if (sqliteData && sqliteData.length > 0) {
+          setResources(sqliteData);
+          console.log(`✅ Resources loaded from SQLite`,sqliteData);
+          return;
+        }
+      } catch (sqliteError) {
+        console.warn("SQLite error or no data, will try backend next.", sqliteError);
+      }
+
+      // 2️⃣ Try backend if SQLite fails or is empty
+      try {
+        const response = await axios.get(
+          `${DEV_BASE_URL}/resourcess/?university=${selectedUniversity}`,
+          { timeout: 1000 }
+        );
+        if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+          setResources(response.data);
+          console.log(`✅ Resources fetched from backend`);
+          return;
+        }
+      } catch (error) {
+        console.error(`❌ Error fetching resources from backend:`, error);
+      }
+
+      // 3️⃣ Fallback to hardcoded data
+      setResources(fallbackData);
+      console.warn(`⚠️ Using fallback resources data`);
+    };
+
+    fetchResources();
+  }, [selectedUniversity]);
+
   const handleResourcePress = (link?: string) => {
     if (link) {
       Linking.openURL(link);

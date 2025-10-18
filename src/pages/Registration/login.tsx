@@ -16,6 +16,13 @@ import { useAuth } from '../../context/AuthContent';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DEV_BASE_URL } from '@env';
 import axios from 'axios';
+import { saveUniversityDataToSQLite } from './database';
+//import { fetchUniversityData } from './selectuniversity';
+//import { saveUniversityDataToSQLite } from './selectuniversity';
+//import handleUniversityDataSave from './selectuniversity';
+
+
+
 // Define the navigation param list
 type RootStackParamList = {
   Auth: undefined;
@@ -32,6 +39,7 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  //const [university, setUniversity] = useState<string | null>(null);
   const navigation = useNavigation<NavigationProp>();
   const { login } = useAuth();
 
@@ -40,6 +48,20 @@ const Login: React.FC = () => {
   const getCSRFToken = () => {
     return '';
   };
+
+
+
+
+
+  
+//code here
+
+
+
+
+
+
+
 
 
  useEffect(() => {
@@ -72,21 +94,55 @@ const Login: React.FC = () => {
       }
     );
 
-    const data = response.data;
 
-       if (
+// write code here
+
+
+
+
+
+
+
+
+  const data = response.data;
+  console.log('Backend response while login data here:', response.data); // <-- Add this line
+const university_data = response.data.university_datas;
+console.log('Fetched university data: from backend her this is the finale and i sleep nowe', university_data);
+
+
+  if (
   response.status === 200 &&
   data.access &&
   data.refresh &&
   data.user
-) {
+    ) {
   await AsyncStorage.setItem('accessToken', data.access);
   await AsyncStorage.setItem('refreshToken', data.refresh);
   await AsyncStorage.setItem('userData', JSON.stringify(data.user));
   const success = await setItem('token', data.access);
+
+  console.log('Backend response while login data here:', response.data);
+
+
+
+if (university_data) {
+  await saveUniversityDataToSQLite(university_data);
+  console.log('this data is connecting to the database here now, its working correctly', university_data);
+}
+
+
+
+
   if (success) {
     await login(data.access);
-    navigation.reset({
+    console.log("Login successful, token saved. and now connecting to backend here");
+    // Fetch university data after login
+;
+
+
+
+
+  navigation.reset({
       index: 0,
       routes: [{ name: 'Main' }],
     });
@@ -96,6 +152,12 @@ const Login: React.FC = () => {
 } else {
   setError(data.error || 'Login failed: Invalid credentials or server error.');
 }
+
+// Check if backend response has university name
+if (data.user.university_name) {
+ // setUniversity(data.user.university_name);
+  await AsyncStorage.setItem('@selected_university', data.user.university_name);
+}
     } catch (err) {
       console.error('Login error:', err);
       setError('Something went wrong. Please try again.');
@@ -103,6 +165,14 @@ const Login: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+
+
+
+// Example usage: call this function where you need the email
+// const storedEmail = await getEmailFromStorage();
+// console.log('Email from AsyncStorage:', storedEmail);
+
 
   return (
     <KeyboardAvoidingView
@@ -186,6 +256,8 @@ const Login: React.FC = () => {
     </KeyboardAvoidingView>
   );
 };
+
+
 
 const styles = StyleSheet.create({
   container: {
@@ -322,3 +394,6 @@ const styles = StyleSheet.create({
 });
 
 export default Login;
+
+
+

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, TextInput, Modal, Alert } from 'react-native';
 import TopNav from './components/TopNav';
+import { checkUserExists } from './utils/mockApi';
 
 interface NewExpense {
   name: string;
@@ -22,6 +23,7 @@ const splitmain = () => {
   ]);
   const [modalVisible, setModalVisible] = useState(false);
   const [newFriendName, setNewFriendName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [newExpenseModalVisible, setNewExpenseModalVisible] = useState(false);
   const [newExpense, setNewExpense] = useState<NewExpense>({
     name: '',
@@ -50,7 +52,7 @@ const splitmain = () => {
 
   const totals = calculateTotals();
 
-  const addFriend = () => {
+  const addFriend = async () => {
     if (newFriendName.trim() === '') {
       Alert.alert('Error', 'Please enter a name');
       return;
@@ -60,17 +62,26 @@ const splitmain = () => {
       Alert.alert('Error', 'This name already exists');
       return;
     }
-    
-    setFriends([...friends, newFriendName]);
-    
-    // Update all existing expenses to include the new friend with 0 amount
-    setExpenses(expenses.map(expense => ({
-      ...expense,
-      amounts: [...expense.amounts, 0]
-    })));
-    
-    setNewFriendName('');
-    setModalVisible(false);
+
+    try {
+      const userExists = await checkUserExists(newFriendName);
+      if (userExists) {
+        setFriends([...friends, newFriendName]);
+        
+        // Update all existing expenses to include the new friend with 0 amount
+        setExpenses(expenses.map(expense => ({
+          ...expense,
+          amounts: [...expense.amounts, 0]
+        })));
+        
+        setNewFriendName('');
+        setModalVisible(false);
+      } else {
+        Alert.alert('Error', `User "${newFriendName}" not found.`);
+      }
+    } catch (error) {
+      Alert.alert('Error', 'An error occurred while checking the user.');
+    }
   };
 
   const addExpense = () => {
@@ -146,6 +157,16 @@ const splitmain = () => {
         }
       />
       
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search friends..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+        />
+      </View>
+
       {/* Table */}
       <ScrollView horizontal={true} style={styles.scrollView}>
         <View>
@@ -154,7 +175,9 @@ const splitmain = () => {
             <View style={[styles.tableCell, styles.headerCell]}>
               <Text>No</Text>
             </View>
-            {friends.map((friend, index) => (
+            {friends
+              .filter(friend => friend.toLowerCase().includes(searchQuery.toLowerCase()))
+              .map((friend, index) => (
               <View key={index} style={[styles.tableCell, styles.headerCell]}>
                 <Text>{friend}</Text>
               </View>
@@ -348,6 +371,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     flex: 1,
     textAlign: 'center',
+  },
+  searchContainer: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  searchInput: {
+    height: 40,
+    borderColor: '#ccc',
+    borderWidth: 1,
+    borderRadius: 5,
+    paddingHorizontal: 10,
   },
   scrollView: {
     flex: 1,

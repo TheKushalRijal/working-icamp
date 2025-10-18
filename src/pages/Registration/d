@@ -1,0 +1,405 @@
+import React, { useEffect, useState } from "react";
+import { View, Text, Button, Modal, FlatList, TouchableOpacity, StyleSheet } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { MMKV } from "react-native-mmkv";
+import { BASE_URL } from "@env";
+import axios from "axios";
+import SQLite from 'react-native-sqlite-storage';
+import Icon from 'react-native-vector-icons/FontAwesome';
+
+const db = SQLite.openDatabase({ name: 'university.db', location: 'default' });
+
+
+const universities = [
+  "University of Texas at Arlington",
+  "Texas State University",
+  "Dallas Community College",
+  "Texas A&M University",
+  "Texas Tech University",
+];
+
+
+
+
+
+
+export interface UniversityData {
+  university_name: string;
+  location: string;
+  posts: any[];          // Replace 'any' with your actual Post type if available
+  videos: any[];         // Replace 'any' with your actual Video type if available
+  announcements: any[];  // Replace 'any' with your actual Announcement type if available
+  restaurants: any[];    // Replace 'any' with your actual Restaurant type if available
+  housing: any[];        // Replace 'any' with your actual Housing type if available
+  resources: any[];      // Add resources to interface
+}
+
+
+
+
+const selectableUniversities = ["University of Texas at Arlington"];
+
+interface UniversitySelectorProps {
+  selectedUniversity: string;
+  onSelectUniversity: (university: string) => void;
+}
+
+const UniversitySelector: React.FC<UniversitySelectorProps> = ({
+  selectedUniversity,
+  onSelectUniversity,
+}) => {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [universityData, setUniversityData] = useState<UniversityData | null>(null);
+
+
+  // Save all university data to SQLite
+  const saveUniversityDataToSQLite = (data: UniversityData) => {
+  // Save housing data
+
+  db.transaction(tx => {
+    tx.executeSql(
+      `CREATE TABLE IF NOT EXISTS housing (
+        id INTEGER PRIMARY KEY,
+        name TEXT,
+        image TEXT,
+        price REAL,
+        website TEXT,
+        campusType TEXT,
+        university_name TEXT
+      );`
+    );
+  });
+  if (data.housing && Array.isArray(data.housing)) {
+    db.transaction(tx => {
+      data.housing.forEach((housing: any) => {
+        tx.executeSql(
+          `INSERT OR REPLACE INTO housing (id, name, image, price, website, campusType, university_name)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
+            housing.id,
+            housing.name,
+            housing.image,
+            parseFloat(housing.price),
+            housing.website,
+            housing.campusType,
+            data.university_name,
+          ]
+        );
+      });
+    });
+  }
+
+  // Save restaurant data
+  db.transaction(tx => {
+    tx.executeSql(
+      `CREATE TABLE IF NOT EXISTS restaurant (
+        id INTEGER PRIMARY KEY,
+        name TEXT,
+        image TEXT,
+        location TEXT,
+        distance TEXT,
+        rating REAL,
+        review_count INTEGER,
+        phone TEXT,
+        open_status TEXT,
+        hours TEXT,
+        featured INTEGER,
+        categories TEXT,
+        university_name TEXT
+      );`
+    );
+  });
+  if (data.restaurants && Array.isArray(data.restaurants)) {
+    db.transaction(tx => {
+      data.restaurants.forEach((restaurant: any) => {
+        tx.executeSql(
+          `INSERT OR REPLACE INTO restaurant (id, name, image, location, distance, rating, review_count, phone, open_status, hours, featured, categories, university_name)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            restaurant.id,
+            restaurant.name,
+            restaurant.image,
+            restaurant.location,
+            restaurant.distance,
+            restaurant.rating,
+            restaurant.review_count,
+            restaurant.phone,
+            restaurant.open_status,
+            restaurant.hours,
+            restaurant.featured ? 1 : 0,
+            JSON.stringify(restaurant.categories),
+            data.university_name,
+          ]
+        );
+      });
+    });
+  }
+
+  // Save video data
+  db.transaction(tx => {
+    tx.executeSql(
+      `CREATE TABLE IF NOT EXISTS video (
+        id INTEGER PRIMARY KEY,
+        url TEXT,
+        author TEXT,
+        university_name TEXT
+      );`
+    );
+  });
+  if (data.videos && Array.isArray(data.videos)) {
+    db.transaction(tx => {
+      data.videos.forEach((video: any) => {
+        tx.executeSql(
+          `INSERT OR REPLACE INTO video (id, url, author, university_name)
+           VALUES (?, ?, ?, ?)`,
+          [
+            video.id,
+            video.url,
+            video.author,
+            data.university_name,
+          ]
+        );
+      });
+    });
+  }
+
+  // Save post data
+  db.transaction(tx => {
+    tx.executeSql(
+      `CREATE TABLE IF NOT EXISTS post (
+        id INTEGER PRIMARY KEY,
+        username TEXT,
+        caption TEXT,
+        imagefield BLOB,
+        location TEXT,
+        latitude REAL,
+        longitude REAL,
+        timestamp TEXT,
+        university_name TEXT
+      );`
+    );
+  });
+  if (data.posts && Array.isArray(data.posts)) {
+    db.transaction(tx => {
+      data.posts.forEach((post: any) => {
+        tx.executeSql(
+          `INSERT OR REPLACE INTO post (id, username, caption, imagefield, location, latitude, longitude, timestamp, university_name)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            post.id,
+            post.username,
+            post.caption,
+            post.imagefield,
+            post.location,
+            post.latitude,
+            post.longitude,
+            post.timestamp,
+            data.university_name,
+          ]
+        );
+      });
+    });
+  }
+
+  // Save announcement data (create table if needed)
+  db.transaction(tx => {
+    tx.executeSql(
+      `CREATE TABLE IF NOT EXISTS announcement (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT,
+        content TEXT,
+        university_name TEXT
+      );`
+    );
+  });
+  if (data.announcements && Array.isArray(data.announcements)) {
+    db.transaction(tx => {
+      data.announcements.forEach((announcement: any) => {
+        tx.executeSql(
+          `INSERT INTO announcement (title, content, university_name)
+           VALUES (?, ?, ?)`,
+          [
+            announcement.title,
+            announcement.content,
+            data.university_name,
+          ]
+        );
+      });
+    });
+  }
+
+  // Save resources data
+  db.transaction(tx => {
+    tx.executeSql(
+      `CREATE TABLE IF NOT EXISTS resource (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        icon TEXT,
+        title TEXT,
+        description TEXT,
+        link TEXT,
+        university_name TEXT
+      );`
+    );
+  });
+
+  if (data.resources && Array.isArray(data.resources)) {
+    db.transaction(tx => {
+      data.resources.forEach((resource: any) => {
+        tx.executeSql(
+          `INSERT OR REPLACE INTO resource (id, icon, title, description, link, university_name)
+           VALUES (?, ?, ?, ?, ?, ?)`,
+          [
+            resource.id,
+            resource.icon,
+            resource.title,
+            resource.description,
+            resource.link || null,
+            data.university_name,
+          ]
+        );
+      });
+    });
+  }
+};
+
+  // 🔹 Handle selection + save in AsyncStorage
+  const handleSelect = async (uni: string) => {
+    if (selectableUniversities.includes(uni)) {
+      try {
+        await AsyncStorage.setItem("@selected_university", uni);
+        onSelectUniversity(uni);
+        setModalVisible(false);
+      } catch (error) {
+        console.error("Error saving university selection", error);
+      }
+    }
+  };
+
+/*
+  useEffect(() => {
+    const fetchUniversityData = async () => {
+      if (!selectedUniversity) return;
+      try {
+        const response = await axios.get(`${BASE_URL}/university-data`, {
+          params: { university_name: selectedUniversity },
+        });
+        if (response.data) {
+          setUniversityData(response.data);
+          saveUniversityDataToSQLite(response.data);
+        }
+      } catch (error) {
+        console.error("Failed to fetch university data", error);
+      }
+    };
+
+    fetchUniversityData();
+  }, [selectedUniversity]);
+
+*/
+
+// this code is for sqlite database implementation
+
+
+
+
+
+
+
+  return (
+    <View>
+      <Text style={styles.label}>University</Text>
+      <TouchableOpacity
+        style={styles.input}
+        onPress={() => setModalVisible(true)}
+      >
+        <Text style={[styles.inputText, !selectedUniversity && styles.placeholder]}>
+          {selectedUniversity || "Select a university"}
+        </Text>
+        <Icon name="chevron-down" size={20} color="#666" />
+      </TouchableOpacity>
+
+      <Modal
+        visible={modalVisible}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <FlatList
+              data={universities}
+              keyExtractor={(item) => item}
+              renderItem={({ item }) => {
+                const disabled = !selectableUniversities.includes(item);
+                return (
+                  <TouchableOpacity
+                    style={[styles.modalItem, disabled && styles.disabledItem]}
+                    disabled={disabled}
+                    onPress={() => handleSelect(item)}
+                  >
+                    <Text style={[styles.modalItemText, disabled && styles.disabledText]}>
+                      {item}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              }}
+            />
+            <TouchableOpacity
+              onPress={() => setModalVisible(false)}
+              style={styles.closeButton}
+            >
+              <Text style={{ color: 'red', textAlign: 'center' }}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+    </View>
+  );
+};
+
+const styles = StyleSheet.create({
+  label: { fontSize: 14, marginBottom: 4 },
+  input: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    padding: 14,
+    borderRadius: 8,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  inputText: { fontSize: 16 },
+  placeholder: { color: '#999' },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+  },
+  modalContent: {
+    backgroundColor: 'white',
+    marginHorizontal: 20,
+    borderRadius: 12,
+    maxHeight: '60%',
+  },
+  modalItem: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  disabledItem: {
+    backgroundColor: '#f9f9f9',
+  },
+  modalItemText: {
+    fontSize: 16,
+  },
+  disabledText: {
+    color: '#999',
+  },
+  closeButton: {
+    padding: 12,
+  },
+});
+
+
+
+export default UniversitySelector;

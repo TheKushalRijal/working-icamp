@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, Platform, ScrollView, Dimensions, TouchableOpac
 import axios from 'axios';
 import YoutubePlayer from 'react-native-youtube-iframe';
 import { DEV_BASE_URL } from '@env';
+import SQLite from 'react-native-sqlite-storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 interface Video {
   id: string | number;
   url: string;
@@ -23,13 +25,43 @@ const sampleVideos: Video[] = [
     thumbnail: 'https://img.youtube.com/vi/u5W0AJXsp4c/maxresdefault.jpg',
     author: 'user'
   },
+
+  
   {
     id: 2,
     url: 'https://www.youtube.com/_2vFnFsu8B4',
     thumbnail: 'https://img.youtube.com/vi/_2vFnFsu8B4/maxresdefault.jpg',
     author: 'campus'
   }
+
+
 ];
+
+const fetchVideosFromSQLite = async (): Promise<Video[]> => {
+  const db = await SQLite.openDatabase({ name: 'university.db', location: 'default' });
+  return new Promise((resolve, reject) => {
+    db.transaction(tx => {
+      tx.executeSql(
+        `SELECT id, url, thumbnail, author FROM videos`,
+        [],
+        (txObj, { rows }) => {
+          const result: Video[] = [];
+          for (let i = 0; i < rows.length; i++) {
+            result.push(rows.item(i));
+          }
+          resolve(result);
+        },
+        (txObj, error) => {
+          reject(error);
+          return false;
+        }
+      );
+    });
+  });
+};
+
+
+
 const extractYouTubeId = (url: string) => {
   const regex = /(?:v=|\/)([a-zA-Z0-9_-]{11})/;
   const match = url.match(regex);
@@ -41,6 +73,7 @@ const VideoSection: React.FC<VideoSectionProps> = ({ activeTab, videos: propVide
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [playingVideoId, setPlayingVideoId] = useState<string | number | null>(null);
+  const [selectedUniversity, setSelectedUniversity] = useState<string | null>(null);
   const playerRefs = useRef<{ [key: string]: any }>({});
   const screenWidth = Dimensions.get('window').width;
   const cardWidth = screenWidth - 24; // Full width minus margins (12px on each side)
@@ -72,48 +105,78 @@ const VideoSection: React.FC<VideoSectionProps> = ({ activeTab, videos: propVide
     });
   };
 
+  // Add university fetch effect
+  useEffect(() => {
+    const getUniversity = async () => {
+      const uni = await AsyncStorage.getItem("@selected_university");
+      setSelectedUniversity(uni);
+    };
+    getUniversity();
+  }, []);
+
+  // Update main fetch effect
   useEffect(() => {
     if (propVideos && Array.isArray(propVideos)) {
       setVideos(propVideos);
       setLoading(false);
       return;
     }
+
+
+
+
+
+    
     const fetchVideos = async () => {
       try {
         setLoading(true);
+        console.log("video resource started here")
+        // 1️⃣ Try SQLite first
+        try {
+          const sqliteData = await fetchVideosFromSQLite();
+          if (sqliteData && sqliteData.length > 0) {
+            const filteredVideos = getFilteredVideos(sqliteData);
+            setVideos(filteredVideos);
+            console.log(`✅ Videos for loaded from SQLite this is the video data we have here now`,sqliteData);
+            return;
+          }
+        } catch (sqliteError) {
+          console.log("SQLite error or no data, will try backend next.", sqliteError);
+        }
+
+        // 2️⃣ Try backend if SQLite fails or is empty
         const BASE_URL = DEV_BASE_URL;
-        const response = await axios.get(`${BASE_URL}/videos/`, {
-          // withCredentials: true,
+        const response = await axios.get(`${BASE_URL}/videoss/`, {
           timeout: 1000
         });
 
-        // here is the fault
-                                  console.log("this is the video url", response.data);
-                          if (response.data) {
-                            const videoArray = Array.isArray(response.data) ? response.data : response.data.videos;
-                            console.log("Parsed video array:", videoArray);
-
-                            const filteredVideos = getFilteredVideos(videoArray);
-                            console.log("Filtered videos:", filteredVideos);
-
-                            if (filteredVideos.length > 0) {
-                              setVideos(filteredVideos);
-                            } else {
-                              console.log("No videos passed the filter.");
-                            }
-                          } else {
-                            console.log("No data in response");
-                          }
+        if (response.data && Array.isArray(response.data) && response.data.length > 0) {
+          const filteredVideos = getFilteredVideos(response.data);
+          setVideos(filteredVideos);
+          console.log(`✅ Videos for ${selectedUniversity} fetched from backend`);
+          return;
+        }
 
       } catch (error) {
-        console.log('Using sample videos (backend unavailable)');
+        console.error(`❌ Error fetching videos for ${selectedUniversity}:`, error);
         setVideos(sampleVideos);
+        console.warn('⚠️ Using fallback video data');
       } finally {
         setLoading(false);
       }
     };
+
     fetchVideos();
   }, [activeTab, propVideos]);
+
+
+
+
+
+
+
+
+
 
   // Function to fetch community videos (to be used later on click)
   const fetchCommunityVideos = async () => {
@@ -148,6 +211,7 @@ const VideoSection: React.FC<VideoSectionProps> = ({ activeTab, videos: propVide
   }
 
   return (
+    
     <View style={styles.container}>
      
       {videos.length > 0 ? (
@@ -285,4 +349,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default VideoSection; 
+export default VideoSection;

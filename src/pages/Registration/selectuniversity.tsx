@@ -1,14 +1,15 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Modal,
-  FlatList,
-  StyleSheet,
-} from 'react-native';
-import Icon from 'react-native-vector-icons/Feather';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useEffect, useState } from "react";
+import { View, Text, Button, Modal, FlatList, TouchableOpacity, StyleSheet } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { MMKV } from "react-native-mmkv";
+import { BASE_URL } from "@env";
+import axios from "axios";
+import SQLite from 'react-native-sqlite-storage';
+import Icon from 'react-native-vector-icons/FontAwesome';
+
+
+//const db = initDB();
+
 
 const universities = [
   "University of Texas at Arlington",
@@ -18,10 +19,14 @@ const universities = [
   "Texas Tech University",
 ];
 
-const selectableUniversities = [
-  "University of Texas at Arlington",
- 
-];
+const selectableUniversities = ["University of Texas at Arlington"];
+
+
+
+
+
+
+
 
 interface UniversitySelectorProps {
   selectedUniversity: string;
@@ -35,25 +40,23 @@ const UniversitySelector: React.FC<UniversitySelectorProps> = ({
   const [modalVisible, setModalVisible] = useState(false);
 
  
-const handleSelect = async (uni: string) => {
-  if (selectableUniversities.includes(uni)) {
-    try {
-      await AsyncStorage.setItem('@selected_university', uni);
-    } catch (error) {
-      console.error('Failed to save selected university', error);
+
+  // Handle selection + save in AsyncStorage
+  const handleSelect = async (uni: string) => {
+    if (selectableUniversities.includes(uni)) {
+      try {
+        await AsyncStorage.setItem("@selected_university", uni);
+        onSelectUniversity(uni);
+        setModalVisible(false);
+      } catch (error) {
+        console.error("Error saving university selection", error);
+      }
     }
-    onSelectUniversity(uni);
-    setModalVisible(false);
-  }
-};
+  };
 
+  // Function for saving university data
 
-
-
-
-
-
-
+  
   return (
     <View>
       <Text style={styles.label}>University</Text>

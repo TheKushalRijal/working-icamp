@@ -12,7 +12,7 @@ import UserPost from '../components/UserPost';
 import { PROD_BASE_URL } from '@env';
 const DEV_BASE_URL = 'http://10.0.2.2:8000';
 //import BASE_URL from '@env';
-
+import { BASE_URL } from '@env';
 
 
 
@@ -105,7 +105,7 @@ const getFromBackend = async () => {
       videos: videosResponse.data,
     };
   } catch (error) {
-    console.error('Error fetching from backend:', error);
+   // console.error('Error fetching from backend:', error);
     return {};
   }
 };
@@ -128,7 +128,7 @@ const allgetFromBackend = async () => {
       communityvideos: videosResponse.data,
     };
   } catch (error) {
-    console.error('Error fetching from backend:', error);
+  //  console.error('Error fetching from backend:', error);
     return {};
   }
 };
@@ -257,6 +257,7 @@ useEffect(() => {
   const renderContent = () => {
 
 
+
     // Render posts based on active tab
     const renderEventItem = ({ item: event }: { item: Event }) => (
       <UserPost
@@ -364,6 +365,8 @@ useEffect(() => {
     }
   };
 
+
+  
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
@@ -406,6 +409,21 @@ useEffect(() => {
   </View>
 
   {/* Videos */}
+
+
+  // add here
+  <View style={{ 
+    alignItems: 'flex-end', 
+    marginTop: -60,      // more space above the arrow
+    marginBottom: 25     // less space below the arrow
+  }}>
+    <Text style={{ 
+      fontSize: 30,
+      color: '#2a4365'  // matching the section title color
+    }}>→</Text>
+  </View>
+
+
   <VideoSection activeTab={activeTab} />
 
   {/* Posts/Events */}
@@ -466,69 +484,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   announcementContainer: {
-    marginBottom: 16,
+    marginTop: 0,
+    marginBottom: 10,
   },
   contentArea: {
-    padding: 12,
+    padding: 3,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
     color: '#2a4365',
-    marginTop: 16,
-    marginBottom: 12,
+    marginTop: -1,
+    marginBottom: -1,
     paddingHorizontal: 12,
   },
-  videoSection: {
-    marginTop: 32,
-  },
-  videoCard: {
-    width: '100%',
-    borderRadius: 12,
-    overflow: 'hidden',
-    backgroundColor: 'white',
-    marginBottom: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 3,
-      },
-    }),
-  },
-  videoWrapper: {
-    width: '100%',
-    aspectRatio: 16/9,
-    backgroundColor: '#000',
-    overflow: 'hidden',
-  },
-  videoPlayer: {
-    width: '100%',
-    height: '100%',
-    objectFit: 'contain',
-  },
-  videoInfo: {
-    padding: 12,
-  },
-  videoTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2d3748',
-    marginBottom: 4,
-  },
-  videoDescription: {
-    fontSize: 14,
-    color: '#718096',
-    lineHeight: 20,
-  },
-  postVideoContainer: {
-    width: '100%',
-    marginVertical: 20,
-  },
+
   emptyStateContainer: {
     padding: 20,
     alignItems: 'center',
@@ -537,11 +507,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginVertical: 16,
   },
-  emptyStateText: {
-    color: '#6c757d',
-    fontSize: 16,
-    textAlign: 'center',
-  },
+  
 });
 
 export default Home;

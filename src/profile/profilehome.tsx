@@ -56,8 +56,8 @@ interface ProfileData {
   profilePic: string;
   fullName: string;
   university: string;
-  years: number;
-  major: string;
+ // years: number;
+  //major: string;
   location: string;
 }
 
@@ -66,10 +66,17 @@ const DEFAULT_PROFILE_DATA: ProfileData = {
   profilePic: 'https://r1.ilikewallpaper.net/iphone-x-wallpapers/download/78885/kratos-on-thrones-iphone-x-wallpaper-ilikewallpaper_com.jpg',
   fullName: 'Your Name',
   university: 'University of Texas',
-  years: 3,
-  major: 'CS',
+ // years: 3,
+ // major: 'CS',
   location: 'Dallas'
 };
+
+
+
+
+
+
+
 
 const ProfilePage = () => {
   const navigation = useNavigation<NavigationProp>();
@@ -119,13 +126,14 @@ const ProfilePage = () => {
   }, []);
 
   const profileSections: ProfileSection[] = [
-    { icon: 'school', title: "University Info", description: "Campus resources, academic calendar", route: "Outside", color: "#7C3AED" },
-    { icon: 'receipt', title: "Visa Guidance", description: "F1 visa tips, OPT/CPT info", route: "Visa", color: "#059669" },
-    { icon: 'library-books', title: "Student Resources", description: "Tutoring, career services", route: "Resources", color: "#D97706" },
-    { icon: 'library-books', title: "Student Discounts", description: "Discounts for students only", route: "Discounts", color: "#D97706" },
+  { icon: 'school', title: "University Info", description: "Campus resources, academic calendar", route: "Outside", color: "#7C3AED" },
+  { icon: 'flight', title: "Visa Guidance", description: "F1 visa tips, OPT/CPT info", route: "Visa", color: "#059669" },
+  { icon: 'directions-car', title: "Driving Schools", description: "Get your licence with a driving school", route: "Driving", color: "#2563EB" },
+  { icon: 'menu-book', title: "Student Resources", description: "Tutoring, career services", route: "Resources", color: "#D97706" },
+  { icon: 'local-offer', title: "Student Discounts", description: "Discounts for students only", route: "Discounts", color: "#16A34A" },
+  { icon: 'security', title: "Avoid Scams", description: "Common frauds to watch for", route: "Scams", color: "#DC2626" },
+];
 
-    { icon: 'warning', title: "Avoid Scams", description: "Common frauds to watch for", route: "ScamShieldApp", color: "#DC2626" }
-  ];
 
   const headerHeight = scrollY.interpolate({
     inputRange: [0, 180],
@@ -257,7 +265,7 @@ const ProfilePage = () => {
           {/* Quick Actions */}
           <View style={styles.quickActions}>
             
-                            <TouchableOpacity
+                <TouchableOpacity
                   style={styles.actionButton}
                   onPress={() => navigation.navigate('Discounts')}
                 >
@@ -265,11 +273,11 @@ const ProfilePage = () => {
                   <Text style={styles.actionText}>Students discounts</Text>
                 </TouchableOpacity>
 
-              <TouchableOpacity a
+              <TouchableOpacity 
               style={styles.actionButton}
               onPress={() => navigation.navigate('Lawyers')}
             >              
-              <MaterialIcon name="event" size={20} color="#4F46E5" />
+              <MaterialIcon name="event" size={30} color="#4F46E5" />
               <Text style={styles.actionText}>Lawyers</Text>
             </TouchableOpacity>
 
@@ -277,7 +285,7 @@ const ProfilePage = () => {
               style={styles.actionButton}
               onPress={() => navigation.navigate('Groups')}
             >
-              <MaterialIcon name="groups" size={20} color="#4F46E5" />
+              <MaterialIcon name="groups" size={30} color="#4F46E5" />
               <Text style={styles.actionText}>Groups</Text>
             </TouchableOpacity>
           </View>
@@ -416,7 +424,7 @@ const styles = StyleSheet.create({
   profileInfo: {
     alignItems: 'center',
     marginTop: 60,
-    marginBottom: 24,
+    marginBottom: 2,
   },
   name: {
     fontSize: 24,
@@ -448,25 +456,41 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     marginTop: 4,
   },
-  quickActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 24,
-    paddingHorizontal: 20,
-  },
-  actionButton: {
-    alignItems: 'center',
-    backgroundColor: '#F5F3FF',
-    padding: 12,
-    borderRadius: 12,
-    width: '30%',
-  },
-  actionText: {
-    color: '#4F46E5',
-    fontSize: 14,
-    fontWeight: '500',
-    marginTop: 8,
-  },
+ quickActions: {
+  flexDirection: 'row',
+  justifyContent: 'space-around',
+  marginVertical: 10,
+  paddingHorizontal: 10,
+  gap: 12, // adds space between buttons if supported
+},
+
+actionButton: {
+  alignItems: 'center',
+  backgroundColor: '#EEF2FF', // softer lavender tone
+  paddingVertical: 10,
+  paddingHorizontal: 10,
+  borderRadius: 16,
+  width: '28%',
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 4,
+  elevation: 3, // for Android shadow
+  borderWidth: 1,
+  borderColor: '#E0E7FF', // subtle border for depth
+},
+
+
+
+
+actionText: {
+  color: '#4338CA', // deeper purple for contrast
+  fontSize: 15,
+  fontWeight: '600',
+  marginTop: 10,
+  letterSpacing: 0.3,
+},
+
   sectionsContainer: {
     marginTop: 5,
   },

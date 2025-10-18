@@ -60,7 +60,7 @@ function AppNavigator() {
       <Stack.Screen name="Store" component={StoresNearMe} />
       <Stack.Screen name="Personal" component={PersonalInfoPage} />
       <Stack.Screen name="Visa" component={VisaPage} />
-      <Stack.Screen name="Scams" component={NameDescriptionList} />
+      <Stack.Screen name="Scams" component={ScammersPage} />
       <Stack.Screen name="Groups" component={CommunityGroupsScreen} />
       <Stack.Screen name="UploadPost" component={UploadPost} />
       <Stack.Screen name="Resources" component={UniversityResourcesPage} />

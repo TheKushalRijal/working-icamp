@@ -10,38 +10,103 @@ import {
   ActivityIndicator,
   FlatList,
   Dimensions,
-  Animated
+  Animated,
+  Linking,
+  Alert
 } from 'react-native';
 //import { MaterialIcons, FontAwesome, FontAwesome5 } from '@expo/vector-icons';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import FontAwesome5 from 'react-native-vector-icons/FontAwesome5';
+import Feather from 'react-native-vector-icons/Feather';
 import TopNav from '../components/navigation/TopNav';
 import axios from 'axios';
 import { DEV_BASE_URL, PROD_BASE_URL } from '@env';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import SQLite from 'react-native-sqlite-storage';
 
-interface Store {
+interface Restaurant {
   id: number;
   name: string;
-  image?: string;
+  image: string;
   location: string;
   distance: string;
   rating: number;
-  reviewCount: number;
-  categories: (string | { name: string })[]; // <-- allow both
-  openStatus: string;
-  phone: string;
-  hours: string;
-  featured?: boolean;
+  featured: boolean;
+  categories: string[];
 }
 
-const StoresNearMe = () => {
-  const [stores, setStores] = useState<Store[]>([]);
+const fallbackData: Restaurant[] = [
+  {
+    id: 0,
+    name: 'Nepali mandir/ Nepali society of texas',
+    image: 'https://lh3.googleusercontent.com/p/AF1QipP-eD1EgjBl1WF86n-QPTFrKOerpS23_pvlSBbk=w143-h143-n-k-no',
+    location: '1212 Royal Pkwy, Euless, TX 76040',
+    distance: '0.5 miles',
+    rating: 4.5,
+    categories: ['Nepali Mandir', 'Nepali society'],
+    featured: true
+  },
+  {
+    id: 1,
+    name: 'Corner Stone',
+    image: 'https://lh3.googleusercontent.com/p/AF1QipN0S1kPVh486_BdprFHkL-bNmteWhXwq2HfySB6=s1360-w1360-h1020',
+    location: '312 College St, Arlington, TX 76010',
+    distance: '0.5 miles',
+    rating: 4.5,
+    categories: ['Free Coffee', 'Festival celebration'],
+    featured: true
+  },
+  {
+    id: 2,
+    name: 'Taipo',
+    image: 'https://lh3.googleusercontent.com/p/AF1QipOB1z4QvEEkk6otpY2h_TSZMYsOEB73HUPzonJ1=w408-h297-k-no',
+    location: '200 E Abram St Suite 140, Arlington TX 76010',
+    distance: '0.5 miles',
+    rating: 4.2,
+    categories: ['Nepali Restuarent', 'Foods'],
+    featured: false
+  },
+  {
+    id: 3,
+    name: 'Royal Texas nepali grill',
+    image: 'https://lh3.googleusercontent.com/p/AF1QipP_va-c3te6J4yQC1rf6_XGjVL0F_aovDlImFkP=w408-h724-k-no',
+    location: '789 Elm Blvd, Dallas, TX',
+    distance: '2.3 miles',
+    rating: 4.8,
+    categories: ['Nepali foods'],
+    featured: false
+  },
+  {
+    id: 4,
+    name: 'Cafe Everest',
+    image: 'https://lh3.googleusercontent.com/p/AF1QipMs8g-kIE8FcGdQPg-Tn9OxFjwEax3xjCp33-IS=w426-h240-k-no',
+    location: '3901 W Arkansas Ln #107A, Arlington, TX 76016',
+    distance: '3.1 miles',
+    rating: 3.9,
+    categories: ['Nepali food'],
+    featured: false
+  },
+  {
+    id: 5,
+    name: 'Deshi Store',
+    image: 'https://lh3.googleusercontent.com/p/AF1QipNA89KlfXE0Lr3GfqdZIENKrssa9ww61dRNZZQA=w408-h306-k-no',
+    location: '1215 S Cooper St, Arlington, TX 76010',
+    distance: '3.1 miles',
+    rating: 3.9,
+    categories: ['Asian items', 'indian store'],
+    featured: false
+  },
+];
+
+const StoresApp = () => {
+  const [stores, setStores] = useState<Restaurant[]>([]);
   const [query, setQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [sortOption, setSortOption] = useState<string>('distance');
   const [currentLocation, setCurrentLocation] = useState<string>('');
+  const [selectedUniversity, setSelectedUniversity] = useState<string | null>(null);
 
   // Animated value for scroll
   const scrollY = React.useRef(new Animated.Value(0)).current;
@@ -51,141 +116,115 @@ const StoresNearMe = () => {
     extrapolate: 'clamp',
   });
 
-  // Hardcoded fallback stores data
-  const hardcodedStores: Store[] = [
-    {
-      id: 0,
-      name: 'Nepali mandir/ Nepali society of texas',
-      image: 'https://lh3.googleusercontent.com/p/AF1QipP-eD1EgjBl1WF86n-QPTFrKOerpS23_pvlSBbk=w143-h143-n-k-no',
-      location: '1212 Royal Pkwy, Euless, TX 76040',
-      distance: '0.5 miles',
-      rating: 4.5,
-      reviewCount: 124,
-      categories: ['Nepali Mandir', 'Nepali society'],
-      openStatus: 'Open now',
-      phone: '(555) 123-4567',
-      hours: 'Mon-Fri: 8AM-9PM, Sat-Sun: 9AM-8PM',
-      featured: true
-    },
-    {
-      id: 1,
-      name: 'Corner Stone',
-      image: 'https://lh3.googleusercontent.com/p/AF1QipN0S1kPVh486_BdprFHkL-bNmteWhXwq2HfySB6=s1360-w1360-h1020',
-      location: '312 College St, Arlington, TX 76010',
-      distance: '0.5 miles',
-      rating: 4.5,
-      reviewCount: 124,
-      categories: ['Free Coffee', 'Festival celebration'],
-      openStatus: 'Open now',
-      phone: '(555) 123-4567',
-      hours: 'Mon-Fri: 8AM-9PM, Sat-Sun: 9AM-8PM',
-      featured: true
-    },
-    {
-      id: 2,
-      name: 'Taipo',
-      image: 'https://lh3.googleusercontent.com/p/AF1QipOB1z4QvEEkk6otpY2h_TSZMYsOEB73HUPzonJ1=w408-h297-k-no',
-      location: '200 E Abram St Suite 140, Arlington TX 76010',
-      distance: '0.5 miles',
-      rating: 4.2,
-      reviewCount: 89,
-      categories: ['Nepali Restuarent', 'Foods'],
-      openStatus: 'Open now',
-      phone: '(555) 987-6543',
-      hours: 'Mon-Sun: 7AM-10PM'
-    },
-    {
-      id: 3,
-      name: 'Royal Texas nepali grill',
-      image: 'https://lh3.googleusercontent.com/p/AF1QipP_va-c3te6J4yQC1rf6_XGjVL0F_aovDlImFkP=w408-h724-k-no',
-      location: '789 Elm Blvd, Dallas, TX',
-      distance: '2.3 miles',
-      rating: 4.8,
-      reviewCount: 215,
-      categories: ['Nepali foods'],
-      openStatus: 'Closes at 8PM',
-      phone: '(555) 456-7890',
-      hours: 'Mon-Sat: 7AM-8PM, Sun: 8AM-7PM'
-    },
-    {
-      id: 4,
-      name: 'Cafe Everest',
-      image: 'https://lh3.googleusercontent.com/p/AF1QipMs8g-kIE8FcGdQPg-Tn9OxFjwEax3xjCp33-IS=w426-h240-k-no',
-      location: '3901 W Arkansas Ln #107A, Arlington, TX 76016',
-      distance: '3.1 miles',
-      rating: 3.9,
-      reviewCount: 42,
-      categories: ['Nepali food'],
-      openStatus: 'Closed - Opens at 7AM',
-      phone: '(555) 789-0123',
-      hours: 'Mon-Fri: 7AM-7PM, Sat: 8AM-5PM'
-    },
-    {
-      id: 5,
-      name: 'Deshi Store',
-      image: 'https://lh3.googleusercontent.com/p/AF1QipNA89KlfXE0Lr3GfqdZIENKrssa9ww61dRNZZQA=w408-h306-k-no',
-      location: '1215 S Cooper St, Arlington, TX 76010',
-      distance: '3.1 miles',
-      rating: 3.9,
-      reviewCount: 42,
-      categories: ['Asian items','indian store'],
-      openStatus: 'Closed - Opens at 7AM',
-      phone: '(555) 789-0123',
-      hours: 'Mon-Fri: 7AM-7PM, Sat: 8AM-5PM'
-    },
-  ];
+  useEffect(() => {
+    async function fetchSelectedUniversity() {
+      try {
+        const university = await AsyncStorage.getItem('@selected_university');
+        setSelectedUniversity(university);
+      } catch (error) {
+        console.error('Failed to retrieve selected university:', error);
+      }
+    }
+    fetchSelectedUniversity();
+  }, []);
+
+  const openLink = async (url: string) => {
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        Alert.alert(`Don't know how to open this URL: ${url}`);
+      }
+    } catch (error) {
+      Alert.alert('An error occurred', 'Could not open the link.');
+    }
+  };
+
+
+
+
+  const fetchStoresFromSQLite = async (): Promise<Restaurant[]> => {
+    const db = await SQLite.openDatabase({ name: 'university.db', location: 'default' });
+  return new Promise((resolve, reject) => {
+    db.transaction(tx => {
+      tx.executeSql(
+        `SELECT id, name, image, location, distance, rating, 
+         categories, featured FROM restaurant`,
+        [],
+        (txObj, { rows }) => {
+          const result: Restaurant[] = [];
+          for (let i = 0; i < rows.length; i++) {
+            const row = rows.item(i);
+            result.push({
+              ...row,
+              categories: JSON.parse(row.categories),
+              featured: row.featured === 1
+            });
+          }
+          resolve(result);
+        },
+        (txObj, error) => {
+          reject(error);
+          return false;
+        }
+      );
+    });
+  });
+};
+
+
+
 
   useEffect(() => {
+  console.log("sqlite data for stores is loading and it is working here", );
+
     const fetchStores = async () => {
-      setIsLoading(true);
-      const BASE_URL = DEV_BASE_URL;
-      
+    
+        //setIsLoading(false);
+      console.log("part second is executed", );
+
+      // 1️⃣ Try SQLite first
       try {
-        // Try to fetch from backend first
-        console.log('Attempting to fetch stores from backend...');
-        const response = await axios.get(`${BASE_URL}/storess/`, {
-         // withCredentials: true,
-          timeout: 100, // 10 second timeout
-        });
-        console.log(response)
+      const sqliteData = await fetchStoresFromSQLite();
+        if (sqliteData && sqliteData.length > 0) {
+          setStores(sqliteData);
+          setIsLoading(false); // <-- set loading false
+          console.log(`✅ Store data loaded from SQLite`,sqliteData);
+          return;
+        }
+        console.log("this is part 3",sqliteData);
+      } catch (sqliteError) {
+        console.warn("SQLite error or no data, will try backend next.", sqliteError);
+      }
+
+      // 2️⃣ Try backend if SQLite fails or is empty
+      try {
+        const response = await axios.get(
+        `${DEV_BASE_URL}/storess`,
+        { timeout: 1000 }
+      );
         if (response.data && Array.isArray(response.data) && response.data.length > 0) {
-          // Transform backend data to match our Store interface
-          const backendStores: Store[] = response.data.map((store: any, index: number) => ({
-            id: store.id || index,
-            name: store.name || store.title || 'Unknown Store',
-            image: store.image || store.image_url || store.photo,
-            location: store.location || store.address || 'Location not available',
-            distance: store.distance || `${Math.floor(Math.random() * 5) + 0.5} miles`,
-            rating: store.rating || store.stars || 4.0,
-            reviewCount: store.review_count || store.reviews || Math.floor(Math.random() * 200) + 10,
-            categories: store.categories || store.tags || ['General'],
-            openStatus: store.open_status || store.status || 'Open now',
-            phone: store.phone || store.contact || '(555) 000-0000',
-            hours: store.hours || store.operating_hours || 'Mon-Fri: 9AM-6PM',
-            featured: store.featured || false
-          }));
-          
-          console.log('Successfully fetched stores from backend:', backendStores.length, 'stores');
-          setStores(backendStores);
-          setCurrentLocation('Arlington, TX'); // You might want to get this from backend too
-        } else {
-          // Fallback to hardcoded data
-          console.log('No valid data from backend, using hardcoded stores');
-          setStores(hardcodedStores);
-          setCurrentLocation('Arlington, TX');
+          setStores(response.data);
+          setIsLoading(false); // <-- set loading false
+          console.log(`✅ Restaurant data fetched from backend`);
+          return;
         }
       } catch (error) {
-        console.error('Error fetching stores from backend, using fallback:', error);
-        // Fallback to hardcoded data
-        setStores(hardcodedStores);
-        setCurrentLocation('Arlington, TX');
-      } finally {
-        setIsLoading(false);
+        console.error(`❌ Error fetching restaurant data from backend:`, error);
       }
+
+      // 3️⃣ Fallback to hardcoded data
+      setStores(fallbackData);
+      setIsLoading(false); // <-- set loading false
+      console.log(`⚠️ Using fallback restaurant data`);
     };
 
     fetchStores();
-  }, []);
+  }, [selectedUniversity]);
+
+
+
 
   // Get all unique categories
   const allCategories = ['All', ...new Set(stores.flatMap(store => store.categories))];
@@ -201,11 +240,9 @@ const StoresNearMe = () => {
     .sort((a, b) => {
         switch (sortOption) {
           case 'rating':
-            return b.rating - a.rating;
           case 'name':
             return a.name.localeCompare(b.name);
           case 'reviewCount':
-            return b.reviewCount - a.reviewCount;
           case 'distance':
           default:
             return parseFloat(a.distance) - parseFloat(b.distance);
@@ -230,7 +267,7 @@ const StoresNearMe = () => {
     return <View style={{flexDirection: 'row'}}>{stars}</View>;
   };
 
-  const renderStoreItem = ({ item }: { item: Store }) => (
+  const renderStoreItem = ({ item }: { item: Restaurant }) => (
     <View style={[styles.storeCard, item.featured && styles.featuredStore]}>
       {item.image && (
         <View style={styles.storeImageContainer}>
@@ -253,6 +290,12 @@ const StoresNearMe = () => {
       <View style={styles.storeInfo}>
         <View style={styles.storeHeader}>
           <Text style={styles.storeName}>{item.name}</Text>
+          {item.website ? (
+            <TouchableOpacity onPress={() => openLink(item.website)} style={styles.visitLink}>
+              <Text style={styles.visitText}>Visit</Text>
+              <Feather name="external-link" size={16} color="#2563EB" />
+            </TouchableOpacity>
+          ) : null}
         </View>
         
         <View style={styles.locationContainer}>
@@ -471,6 +514,16 @@ const styles = StyleSheet.create({
     color: '#111827',
     flexShrink: 1,
   },
+  visitLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 8,
+  },
+  visitText: {
+    color: '#2563EB',
+    marginRight: 4,
+    fontWeight: '500',
+  },
   locationContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -510,4 +563,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default StoresNearMe;
+export default StoresApp;
