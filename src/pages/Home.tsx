@@ -1,37 +1,29 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Platform, FlatList, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, FlatList } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Icon from 'react-native-vector-icons/Feather';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useEvents } from '../context/EventContext';
 import VideoSection from '../components/videos/VideoSection';
 import BottomNav from '../components/navigation/BottomNav';
 import UserPost from '../components/UserPost';
-  //import { DEV_BASE_URL, PROD_BASE_URL } from '@env';
 import { PROD_BASE_URL } from '@env';
+import CommunityLinks from '../components/navigation/CommunityLink';
+import CommunityTabs from '../components/navigation/CommunityTabs';
+import FeaturedAnnouncement from '../components/announcements/FeaturedAnnouncements';
 const DEV_BASE_URL = 'http://10.0.2.2:8000';
-//import BASE_URL from '@env';
-import { BASE_URL } from '@env';
+const BASE_URL=DEV_BASE_URL;
 
-
-
-import AsyncStorage from '@react-native-async-storage/async-storage';
-// Define the navigation type
 type RootStackParamList = {
   Home: undefined;
   Upload: undefined;
   UploadPost: undefined;
-  Visa:undefined;
-  // Add other screens as needed
+  Visa: undefined;
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
-
-// Components
-import FeaturedAnnouncement from '../components/announcements/FeaturedAnnouncements';
-import CommunityLinks from '../components/navigation/CommunityLink';
-import CommunityTabs from '../components/navigation/CommunityTabs';
 
 interface Event {
   id: number;
@@ -43,331 +35,182 @@ interface Event {
   isJoined: boolean;
 }
 
-interface Post {
-  id: number | string;
-  user: string;
-  title: string;
-  text: string;
-  content: string;
-  caption: string;
-  author: string;
-  date: string;
-  likes: number;
-  comments: number;
-  isLiked: boolean;
-  isBookmarked: boolean;
-  location?: { name?: string };
-  Timestamp?: string;
-  preview?: string;
-}
-
-
 const Home: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
-  const { events: initialEvents } = useEvents();
-  const [activeTab, setActiveTab] = useState<'your-community' | 'campus-community'>('your-community');
+  const { events: hardcodedEvents } = useEvents();
 
-  const [events, setEvents] = useState<Event[]>(initialEvents);
-  const [firebasePosts, setFirebasePosts] = useState<Post[]>([]);
-  const [localPosts, setLocalPosts] = useState<Post[]>([]);
-  const [backendPosts, setBackendPosts] = useState<Post[]>([]);
-  const [featuredVideos, setFeaturedVideos] = useState<any[]>([]);
+  const [events, setEvents] = useState<Event[]>(hardcodedEvents);
+  const [activeTab, setActiveTab] = useState<'your-community' | 'campus-community'>('your-community');
   const [announcement, setAnnouncement] = useState<any>(null);
   const [announcementLoading, setAnnouncementLoading] = useState(true);
+  const [featuredVideos, setFeaturedVideos] = useState<any[]>([]);
 
-
-
-
-
-
-
-const getFromBackend = async () => {
-
+  // ✅ Fetch backend events and cache in AsyncStorage
+  const fetchBackendEvents = async () => {
   try {
-    const homeResponse = await axios.get(`${BASE_URL}/home/`, {
-      timeout: 10, // 10 second timeout
+    const storedData = await AsyncStorage.getItem('backend_events');
+    let existingEvents: Event[] = storedData ? JSON.parse(storedData) : [];
 
-   //   withCredentials: true,
-    });
+    // ✅ Check how many times page has been loaded
+    const loadCountData = await AsyncStorage.getItem('page_load_count');
+    let loadCount = loadCountData ? parseInt(loadCountData) : 0;
+    loadCount += 1;
+    await AsyncStorage.setItem('page_load_count', String(loadCount));
 
-    const videosResponse = await axios.get(`${BASE_URL}/videos/`, {
-      timeout: 10, // 10 second timeout
+    // ✅ On first load — fetch all posts from backend
+    if (loadCount === 1 || existingEvents.length === 0) {
+      const response = await axios.get(`${DEV_BASE_URL}/home/`, { timeout: 10000 });
+      if (response?.data && Array.isArray(response.data)) {
+        const backendEvents: Event[] = response.data.map((item: any, index: number) => ({
+          id: item.id || index + 1000,
+          title: item.title || 'Untitled Event',
+          description: item.description || item.caption || 'No description',
+          date: item.date || new Date().toISOString(),
+          location: item.location || 'TBD',
+          image: item.image || 'https://example.com/default.jpg',
+          isJoined: false,
+        }));
 
-   //   withCredentials: true,
-    });
-    console.log("Home Data:", homeResponse.data);
-    console.log("Videos Data:", videosResponse.data);
-
-  
-
-    return {
-      home: homeResponse.data,
-      videos: videosResponse.data,
-    };
-  } catch (error) {
-   // console.error('Error fetching from backend:', error);
-    return {};
-  }
-};
-
-const allgetFromBackend = async () => {
-  const BASE_URL = DEV_BASE_URL;
-
-  try {
-    const homeResponse = await axios.get(`${BASE_URL}/home/comunity/`, {
-     // withCredentials: true,
-    });
-
-    const videosResponse = await axios.get(`${BASE_URL}/videos/community/`, {
-     // withCredentials: true,
-    });
-    console.log(videosResponse.data)
-
-    return {
-      communityhome: homeResponse.data,
-      communityvideos: videosResponse.data,
-    };
-  } catch (error) {
-  //  console.error('Error fetching from backend:', error);
-    return {};
-  }
-};
-
-
-
-useEffect(() => {
-  const fetchBackendData = async () => {// check here 
-    const { home, videos } = await getFromBackend();
-    console.log('Backend data received:', { home, videos });
-    
-    if (home && Array.isArray(home)) {
-      const formattedPosts = home.map((post: any) => ({
-        id: post.id || Math.random().toString(),
-        user: post.user || 'Anonymous',
-        title: post.title || '',
-        text: post.content || post.caption || '',
-        content: post.content || post.caption || '',
-        caption: post.caption || '',
-        author: post.author || post.user || 'Anonymous',
-        date: post.date || post.Timestamp || new Date().toISOString(),
-        likes: post.likes || 0,
-        comments: post.comments || 0,
-        isLiked: false,
-        isBookmarked: false,
-        location: post.location || {},
-        Timestamp: post.Timestamp,
-        preview: post.preview
-      }));
-      console.log('Formatted backend posts:', formattedPosts);
-      setBackendPosts(formattedPosts);
+        await AsyncStorage.setItem('backend_events', JSON.stringify(backendEvents));
+        console.log('✅ All backend posts fetched and saved locally');
+      }
+      return;
     }
 
-    if (videos && Array.isArray(videos)) {
-      console.log('Featured videos data:', videos);
-      console.log('Video URLs:', videos.map(v => v.url));
-      console.log('Video titles:', videos.map(v => v.title));
-      setFeaturedVideos(videos);
-    } else {
-      console.log('No videos data received or invalid format:', videos);
+    // ✅ Every second load only — check for new post
+    if (loadCount % 2 === 0 && existingEvents.length > 0) {
+      const latestId = Math.max(...existingEvents.map((e) => e.id));
+      const response = await axios.get(`${DEV_BASE_URL}/home/${latestId}`, { timeout: 10000 });
+
+      if (response?.data === 0) {
+        console.log('🟢 No new posts found');
+      } else if (response?.data && typeof response.data === 'object') {
+        const newPost: Event = {
+          id: response.data.id || latestId + 1,
+          title: response.data.title || 'Untitled Event',
+          description: response.data.description || response.data.caption || 'No description',
+          date: response.data.date || new Date().toISOString(),
+          location: response.data.location || 'TBD',
+          image: response.data.image || 'https://example.com/default.jpg',
+          isJoined: false,
+        };
+
+        const updatedEvents = [...existingEvents, newPost];
+        await AsyncStorage.setItem('backend_events', JSON.stringify(updatedEvents));
+        console.log('🆕 New post added to local storage');
+      }
+    }
+  } catch (error) {
+    console.error('❌ Error fetching backend events:', error);
+  }
+};
+
+// ✅ Load events from AsyncStorage (and fetch backend in background)
+useEffect(() => {
+  const loadEvents = async () => {
+    try {
+      const storedData = await AsyncStorage.getItem('backend_events');
+      const localEvents = storedData ? JSON.parse(storedData) : [];
+      const combinedEvents = [...hardcodedEvents, ...localEvents];
+      setEvents(combinedEvents);
+      console.log('📦 Loaded events from local storage + hardcoded');
+    } catch (error) {
+      console.error('❌ Error loading events from AsyncStorage:', error);
     }
   };
 
-  fetchBackendData();
+  loadEvents();
+  fetchBackendEvents(); // background update logic
 }, []);
 
-  const handleJoinEvent = (eventId: number) => {
-    setEvents(prev =>
-      prev.map(event =>
-        event.id === eventId ? { ...event, isJoined: !event.isJoined } : event
-      )
-    );
-  };
-
-  const handleLikePost = (postId: number | string) => {
-    setFirebasePosts(prev =>
-      prev.map(post =>
-        post.id === postId
-          ? {
-              ...post,
-              isLiked: !post.isLiked,
-              likes: post.isLiked ? post.likes - 1 : post.likes + 1
-            }
-          : post
-      )
-    );
-  };
-
-  const handleUploadPress = () => {
-    navigation.navigate('UploadPost');
-  };
-
-  // Fetch announcement from backend or fallback
- 
-
-  // Add renderAnnouncement function
-  useEffect(() => {
-    const fetchAnnouncement = async () => {
-      const BASE_URL = DEV_BASE_URL;
-  
-      // Helper function to save data in AsyncStorage
-      const saveToStorage = async (data) => {
-        try {
-          await AsyncStorage.setItem('announcement', JSON.stringify(data));
-          console.log('Saved announcement to storage.');
-        } catch (error) {
-          console.error('Error saving announcement to storage:', error);
-        }
-      };
-  
+// ✅ Fetch announcement with cache (unchanged)
+useEffect(() => {
+  const fetchAnnouncement = async () => {
+    const BASE_URL = DEV_BASE_URL;
+    const saveToStorage = async (data: any) => {
       try {
-        // Load cached data first
-        const cached = await AsyncStorage.getItem('announcement');
-        if (cached) {
-          setAnnouncement(JSON.parse(cached));
-          console.log('Loaded announcement from cache.');
-        } else {
-          // Use default if no cache
-          const defaultData = {
-            title: '📢 Summer Vacation',
-            description: 'Class starting on Aug 19',
-          };
-          setAnnouncement(defaultData);
-        }
-  
-        // Then try fetching from backend
-       const response = await axios.get(`${BASE_URL}/announcements/`, {
-  timeout: 10, // 10 seconds in milliseconds
-});
-
-        if (response?.data) {
-          setAnnouncement(response.data);
-          await saveToStorage(response.data); // Save fetched data to storage
-          console.log('Fetched announcement from backend:', response.data);
-        }
+        await AsyncStorage.setItem('announcement', JSON.stringify(data));
       } catch (error) {
-        console.error('Failed to fetch from backend:', error.message);
-      } finally {
-        setAnnouncementLoading(false);
+        console.error('Error saving announcement to storage:', error);
       }
     };
-  
-    fetchAnnouncement();
-  }, []);
 
-  const renderContent = () => {
+    try {
+      const cached = await AsyncStorage.getItem('announcement');
+      if (cached) {
+        setAnnouncement(JSON.parse(cached));
+      } else {
+        const defaultData = { title: '📢 Summer Vacation', description: 'Class starting on Aug 19' };
+        setAnnouncement(defaultData);
+      }
 
-
-
-    // Render posts based on active tab
-    const renderEventItem = ({ item: event }: { item: Event }) => (
-      <UserPost
-        key={event.id}
-        id={event.id}
-        user={{ id: String(event.id), name: event.title }}
-        title={event.title}
-        content={event.description}
-        location={event.location}
-        timestamp={event.date}
-        likes={event.isJoined ? 1 : 0}
-        comments={0}
-        shares={0}
-        isLiked={event.isJoined}
-        isBookmarked={false}
-        onLike={() => handleJoinEvent(event.id)}
-      />
-    );
-
-    const renderPostItem = ({ item: post, index }: { item: Post; index: number }) => (
-      <UserPost
-        key={`backend-${post.id || index}`}
-        id={post.id || `backend-${index}`}
-        user={{ id: post.user || 'username', name: post.user || 'Anonymous' }}
-        title={post.title || post.user || 'Anonymous'}
-        content={post.content || post.caption || ''}
-        location={post.location?.name || ''}
-        timestamp={post.Timestamp || post.date || new Date().toISOString()}
-        likes={post.likes || 0}
-        comments={post.comments || 0}
-        shares={0}
-        isLiked={post.isLiked || false}
-        isBookmarked={post.isBookmarked || false}
-        onLike={() => {}}
-      >
-        {post.preview && (
-          <View style={styles.postVideoContainer}>
-            <Text>Video Preview: {post.preview}</Text>
-          </View>
-        )}
-      </UserPost>
-    );
-
-    if (activeTab === 'your-community') {
-      return (
-        <>
-          {/* Backend Posts */}
-          {events.length > 0 && (
-            <>
-              <Text style={styles.sectionTitle}>Your Events</Text>
-              <FlatList
-                data={events}
-                renderItem={renderEventItem}
-                keyExtractor={(item) => `event-${item.id}`}
-                scrollEnabled={false}
-                ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
-              />
-            </>
-          )}
-          {backendPosts.length > 0 && (
-            <>
-              <Text style={styles.sectionTitle}>Your Posts</Text>
-              <FlatList
-                data={backendPosts}
-                renderItem={renderPostItem}
-                keyExtractor={(item, index) => `post-${item.id || index}`}
-                scrollEnabled={false}
-                ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
-              />
-            </>
-          )}
-
-          {/* Events */}
-          
-
-          {/* Empty State */}
-          {backendPosts.length === 0 && events.length === 0 && (
-            <View style={styles.emptyStateContainer}>
-              <Text style={styles.emptyStateText}>
-                No posts or events available in your community yet
-              </Text>
-            </View>
-          )}
-        </>
-      );
-    } else {
-      // Campus Community tab shows events and firebase posts
-      return (
-        <>
-          {/* Events */}
-          {events.length > 0 && (
-            <>
-              <Text style={styles.sectionTitle}>Campus Events</Text>
-              <FlatList
-                data={events}
-                renderItem={renderEventItem}
-                keyExtractor={(item) => `event-${item.id}`}
-                scrollEnabled={false}
-                ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
-              />
-            </>
-          )}
-        </>
-      );
+      const response = await axios.get(`${BASE_URL}/announcements/`, { timeout: 10000 });
+      if (response?.data) {
+        setAnnouncement(response.data);
+        await saveToStorage(response.data);
+        console.log('✅ Announcement fetched and cached');
+      }
+    } catch (error) {
+      console.error('❌ Failed to fetch announcement:', error.message);
+    } finally {
+      setAnnouncementLoading(false);
     }
   };
 
+  fetchAnnouncement();
+}, []);
 
-  
+// Rest of your UI code (unchanged)
+const handleUploadPress = () => {
+  navigation.navigate('UploadPost');
+};
+
+const renderEventItem = ({ item: event }: { item: Event }) => (
+  <UserPost
+    key={event.id}
+    id={event.id}
+    user={{ id: String(event.id), name: event.title }}
+    title={event.title}
+    content={event.description}
+    location={event.location}
+    timestamp={event.date}
+    likes={event.isJoined ? 1 : 0}
+    comments={0}
+    shares={0}
+    isLiked={event.isJoined}
+    isBookmarked={false}
+    onLike={() => {}}
+  />
+);
+
+  const renderContent = () => (
+  <>
+    {events.length > 0 ? (
+      <>
+        <Text style={styles.sectionTitle}>
+          {activeTab === 'your-community' ? 'Your Events' : 'Campus Events'}
+        </Text>
+        <FlatList
+          data={events}
+          renderItem={renderEventItem}
+          keyExtractor={(item) => `event-${item.id}`}
+          scrollEnabled={false}
+          ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
+        />
+      </>
+    ) : (
+      <View style={styles.emptyStateContainer}>
+        <Text style={styles.emptyStateText}>No events available</Text>
+      </View>
+    )}
+  </>
+);
+
+
+
+
   return (
+  <>
     <ScrollView style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerContent}>
@@ -377,12 +220,7 @@ useEffect(() => {
             </View>
             <Text style={styles.welcomeText}>Icamp</Text>
           </View>
-
-          <TouchableOpacity 
-            style={styles.loginBtn} 
-            onPress={handleUploadPress}
-            accessibilityLabel="Upload"
-          >
+          <TouchableOpacity style={styles.loginBtn} onPress={handleUploadPress}>
             <Icon name="plus" size={24} color="white" />
           </TouchableOpacity>
         </View>
@@ -392,50 +230,35 @@ useEffect(() => {
       <CommunityTabs activeTab={activeTab} onTabChange={setActiveTab} />
 
       <View style={styles.contentArea}>
-  {/* Announcement and Videos always shown */}
-  <View style={styles.contentArea}>
-  {/* Announcement */}
-  <View style={styles.announcementContainer}>
-    {announcementLoading ? (
-      <Text>Loading announcement...</Text>
-    ) : announcement ? (
-      <FeaturedAnnouncement 
-        title={`📢 ${announcement.title}`} 
-        description={announcement.description} 
-      />
-    ) : (
-      <Text>No announcements available</Text>
-    )}
-  </View>
+        <View style={styles.announcementContainer}>
+          {announcementLoading ? (
+            <Text>Loading announcement...</Text>
+          ) : announcement ? (
+            <FeaturedAnnouncement
+              title={`📢 ${announcement.title}`}
+              description={announcement.description}
+            />
+          ) : (
+            <Text>No announcements available</Text>
+          )}
+        </View>
 
-  {/* Videos */}
+        <View style={{ alignItems: 'flex-end', marginTop: -60, marginBottom: 25 }}>
+          <Text style={{ fontSize: 30, color: '#2a4365' }}>→</Text>
+        </View>
 
-
-  // add here
-  <View style={{ 
-    alignItems: 'flex-end', 
-    marginTop: -60,      // more space above the arrow
-    marginBottom: 25     // less space below the arrow
-  }}>
-    <Text style={{ 
-      fontSize: 30,
-      color: '#2a4365'  // matching the section title color
-    }}>→</Text>
-  </View>
-
-
-  <VideoSection activeTab={activeTab} />
-
-  {/* Posts/Events */}
-  {renderContent()}
-</View>
-
-  {/* Posts/Events based on tab */}
-</View>
-
+        <VideoSection activeTab={activeTab} />
+        {renderContent()}
+      </View>
     </ScrollView>
-  );
+
+    {/* 👇 Add Bottom Navigation outside the scroll */}
+  </>
+);
+
 };
+
+
 
 const styles = StyleSheet.create({
   container: {
