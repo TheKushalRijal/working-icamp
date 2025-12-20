@@ -32,6 +32,8 @@ interface CalendarProps {
   events?: Event[];
 }
 
+
+
 const Calendar: React.FC<CalendarProps> = ({
   events = [],
   initialDate = new Date(),

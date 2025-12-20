@@ -25,6 +25,8 @@ type RootStackParamList = {
   Auth: undefined;
   Main: undefined;
   Login: undefined;
+  terms: undefined; // <-- make sure this is added
+
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -33,8 +35,8 @@ interface FormData {
   fullName: string;
   email: string;
   password: string;
-  confirmPassword: string;
   university: string;
+  confirmPassword: string;
 }
 
 const Register: React.FC = () => {
@@ -44,8 +46,8 @@ const Register: React.FC = () => {
     fullName: '',
     email: '',
     password: '',
-    confirmPassword: '',
     university: '',
+    confirmPassword: '',
   });
 
   const [errors, setErrors] = useState<string[]>([]);
@@ -54,7 +56,9 @@ const Register: React.FC = () => {
   const [verificationStep, setVerificationStep] = useState(false);
   const [verificationCode, setVerificationCode] = useState<string[]>(Array(6).fill(''));
   const [verificationError, setVerificationError] = useState('');
+const [selectedUniversityId, setSelectedUniversityId] = useState<number | null>(null);
 
+const [selectedUniversity, setSelectedUniversity] = useState<string>("");
   // Refs to move focus between code inputs
   const codeInputs = useRef<Array<TextInput | null>>([]);
 
@@ -62,7 +66,6 @@ const Register: React.FC = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const [selectedUniversity, setSelectedUniversity] = useState('');
 
 
 
@@ -108,7 +111,6 @@ useEffect(() => {
     }
 
     try {
-      // No CSRF token in React Native normally. Adjust backend for tokenless or JWT.
       const response = await axios.post(
         `${DEV_BASE_URL}/register_user/`,
         formData,
@@ -116,7 +118,7 @@ useEffect(() => {
           headers: { 'Content-Type': 'application/json' },
         }
       );
-          console.log("this is the from data with university",formData)
+          console.log("this is the from data with university sent to backend",formData)
       if (response.status === 200) {
         // Store full name if needed in AsyncStorage or context, here just local state
         setVerificationStep(true);
@@ -131,7 +133,7 @@ useEffect(() => {
     }
   };
 
-  const handleVerificationChange = (text: string, index: number) => {
+  const handleVerificationChange = (text: string, index: number) => {  // Only allow numeric input for otp
     if (/^\d*$/.test(text)) {
       const newCode = [...verificationCode];
       newCode[index] = text;
@@ -144,7 +146,7 @@ useEffect(() => {
     }
   };
 
-  const handleVerificationKeyPress = (
+  const handleVerificationKeyPress = (// just to move cursor to next and previousbox 
     e: { nativeEvent: { key: string } },
     index: number
   ) => {
@@ -180,12 +182,12 @@ useEffect(() => {
       if (response.data.access) { // Check for JWT token
        //  Save tokens securely
       await AsyncStorage.setItem('accessToken', response.data.access);
-      await AsyncStorage.setItem('refreshToken', response.data.refresh);
+    //  await AsyncStorage.setItem('refreshToken', response.data.refresh);
       await AsyncStorage.setItem('userData', JSON.stringify(response.data.user));
 
         
         // Store user data if needed
-        await AsyncStorage.setItem('userData', JSON.stringify(response.data.user));
+     //   await AsyncStorage.setItem('userData', JSON.stringify(response.data.user));
 
       if (response.status === 200) {
         Alert.alert('Success', 'Verification successful! You can now login.', [
@@ -352,10 +354,15 @@ useEffect(() => {
  <View>
       {/* other form inputs */}
 
-      <UniversitySelector
-        selectedUniversity={selectedUniversity}
-        onSelectUniversity={setSelectedUniversity}
-      />
+     <UniversitySelector
+  selectedUniversityId={selectedUniversityId}
+  onSelectUniversity={(id) => {
+    setSelectedUniversityId(id);
+    setFormData(prev => ({ ...prev, university: id.toString() }));
+  }}
+/>
+
+
 
       {/* other form inputs */}
     </View>
@@ -390,12 +397,18 @@ useEffect(() => {
             </View>
           </View>
 
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>
-              By continuing, you agree to our{' '}
-              <Text style={styles.link}>Terms</Text> and <Text style={styles.link}>Privacy Policy</Text>
-            </Text>
-          </View>
+         <View style={styles.footer}>
+  <Text style={styles.footerText}>
+    By continuing, you agree to our{' '}
+    <Text
+      style={styles.link}
+      onPress={() => navigation.navigate("terms")}
+    >
+      Terms & Privacy Policy
+    </Text>
+  </Text>
+</View>
+
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -407,153 +420,167 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#383961',
     justifyContent: 'center',
-    padding: 16,
+    padding: 12, // reduced
   },
+
   scrollContent: {
     flexGrow: 1,
     justifyContent: 'center',
   },
+
   card: {
     backgroundColor: 'white',
-    borderRadius: 16,
+    borderRadius: 14,
     overflow: 'hidden',
     borderTopWidth: 4,
-    borderTopColor: '#DC143C', // for the top of the card
+    borderTopColor: '#DC143C',
   },
+
   header: {
-    backgroundColor: '#091429', // for card
-    paddingVertical: 24,
+    backgroundColor: '#091429',
+    paddingVertical: 8, // tighter
     alignItems: 'center',
   },
-  logoCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'white',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  logoText: {
-    color: '#DC143C',
-    fontWeight: 'bold',
-    fontSize: 24,
-  },
+
   title: {
     color: 'white',
-    fontSize: 24,
+    fontSize: 18, // slightly smaller
     fontWeight: '700',
   },
+
   subtitle: {
     color: 'rgba(255, 255, 255, 0.9)',
-    fontSize: 14,
+    fontSize: 11, // compact
+    marginTop: 2,
   },
+
   errorBox: {
     backgroundColor: '#FEE2E2',
     borderLeftWidth: 4,
     borderLeftColor: '#DC2626',
-    padding: 12,
-    margin: 16,
+    padding: 10,
+    marginHorizontal: 14,
+    marginTop: 8,
     borderRadius: 4,
   },
+
   errorText: {
     color: '#B91C1C',
+    fontSize: 12,
   },
+
   form: {
-    paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingHorizontal: 14, // reduced
+    paddingVertical: 8,    // reduced
   },
+
   label: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#374151',
     fontWeight: '600',
-    marginBottom: 4,
+    marginBottom: 2, // no negative margins
   },
+
   input: {
     borderWidth: 1,
     borderColor: '#D1D5DB',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 16,
-    fontSize: 16,
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 8, // reduced height
+    marginBottom: 8,    // key fix
+    fontSize: 14,       // readable but compact
     color: '#111827',
   },
+
   passwordLabelContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 2,
   },
+
   toggleText: {
     fontSize: 12,
     color: '#1E40AF',
     fontWeight: '600',
   },
+
   button: {
     backgroundColor: '#2563EB',
-    paddingVertical: 14,
+    paddingVertical: 12, // reduced
     borderRadius: 12,
     alignItems: 'center',
-    flexDirection: 'row',
     justifyContent: 'center',
+    marginTop: 6,
   },
+
   buttonDisabled: {
     backgroundColor: '#1D4ED8',
   },
+
   buttonText: {
     color: 'white',
     fontWeight: '700',
-    fontSize: 16,
+    fontSize: 15,
   },
+
   registerContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginTop: 24,
+    marginTop: 10, // reduced
   },
+
   registerText: {
     color: '#6B7280',
-    fontSize: 14,
+    fontSize: 13,
   },
+
   registerLink: {
     color: '#DC143C',
     fontWeight: '700',
-    fontSize: 14,
+    fontSize: 13,
     marginLeft: 4,
     textDecorationLine: 'underline',
   },
+
   footer: {
     backgroundColor: '#F9FAFB',
     borderTopWidth: 1,
     borderTopColor: '#E5E7EB',
-    padding: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     alignItems: 'center',
   },
+
   footerText: {
     fontSize: 11,
     color: '#6B7280',
     textAlign: 'center',
   },
+
   link: {
     color: '#2563EB',
     textDecorationLine: 'underline',
   },
+
   codeContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 24,
+    marginBottom: 16, // reduced
   },
+
   codeInput: {
-    width: 45,
-    height: 45,
+    width: 42,
+    height: 42,
     borderWidth: 1,
     borderColor: '#D1D5DB',
     borderRadius: 8,
     textAlign: 'center',
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '600',
     color: '#111827',
   },
 });
+
 
 export default Register;

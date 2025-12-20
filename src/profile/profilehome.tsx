@@ -39,6 +39,7 @@ type RootStackParamList = {
   ScamShieldApp: undefined;
   Lawyers:undefined;
   Discounts: undefined;
+  insurance:undefined;
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -128,6 +129,8 @@ const ProfilePage = () => {
   const profileSections: ProfileSection[] = [
   { icon: 'school', title: "University Info", description: "Campus resources, academic calendar", route: "Outside", color: "#7C3AED" },
   { icon: 'flight', title: "Visa Guidance", description: "F1 visa tips, OPT/CPT info", route: "Visa", color: "#059669" },
+    { icon: 'local-offer', title: "Health insurance and clinics", description: "Emergency clinics and health insurances for you", route: "insurance", color: "#16A34A" },
+
   { icon: 'directions-car', title: "Driving Schools", description: "Get your licence with a driving school", route: "Driving", color: "#2563EB" },
   { icon: 'menu-book', title: "Student Resources", description: "Tutoring, career services", route: "Resources", color: "#D97706" },
   { icon: 'local-offer', title: "Student Discounts", description: "Discounts for students only", route: "Discounts", color: "#16A34A" },
@@ -459,16 +462,16 @@ const styles = StyleSheet.create({
  quickActions: {
   flexDirection: 'row',
   justifyContent: 'space-around',
-  marginVertical: 10,
+  marginVertical: 1,
   paddingHorizontal: 10,
-  gap: 12, // adds space between buttons if supported
+  gap: 16, // adds space between buttons if supported
 },
 
 actionButton: {
   alignItems: 'center',
   backgroundColor: '#EEF2FF', // softer lavender tone
-  paddingVertical: 10,
-  paddingHorizontal: 10,
+  paddingVertical: 1,
+  paddingHorizontal: 1,
   borderRadius: 16,
   width: '28%',
   shadowColor: '#000',
@@ -485,7 +488,7 @@ actionButton: {
 
 actionText: {
   color: '#4338CA', // deeper purple for contrast
-  fontSize: 15,
+  fontSize: 12,
   fontWeight: '600',
   marginTop: 10,
   letterSpacing: 0.3,

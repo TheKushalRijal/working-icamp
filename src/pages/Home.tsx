@@ -12,9 +12,14 @@ import UserPost from '../components/UserPost';
 import { PROD_BASE_URL } from '@env';
 import CommunityLinks from '../components/navigation/CommunityLink';
 import CommunityTabs from '../components/navigation/CommunityTabs';
-import FeaturedAnnouncement from '../components/announcements/FeaturedAnnouncements';
 const DEV_BASE_URL = 'http://10.0.2.2:8000';
 const BASE_URL=DEV_BASE_URL;
+import { useFocusEffect } from '@react-navigation/native';
+import { useCallback } from 'react';
+
+import FeaturedAnnouncement from '../components/announcements/FeaturedAnnouncements';
+
+
 
 type RootStackParamList = {
   Home: undefined;
@@ -29,10 +34,10 @@ interface Event {
   id: number;
   title: string;
   description: string;
-  date: string;
-  location: string;
-  image?: string;
-  isJoined: boolean;
+ // date: string;
+ // location: string;
+ // image?: string;
+ // isJoined: boolean;
 }
 
 const Home: React.FC = () => {
@@ -41,124 +46,189 @@ const Home: React.FC = () => {
 
   const [events, setEvents] = useState<Event[]>(hardcodedEvents);
   const [activeTab, setActiveTab] = useState<'your-community' | 'campus-community'>('your-community');
-  const [announcement, setAnnouncement] = useState<any>(null);
-  const [announcementLoading, setAnnouncementLoading] = useState(true);
+
   const [featuredVideos, setFeaturedVideos] = useState<any[]>([]);
 
-  // ✅ Fetch backend events and cache in AsyncStorage
-  const fetchBackendEvents = async () => {
+  // --------------------------
+  // Fetch backend events and cache in AsyncStorage
+  // --------------------------
+const fetchBackendEvents = async () => {
   try {
-    const storedData = await AsyncStorage.getItem('backend_events');
-    let existingEvents: Event[] = storedData ? JSON.parse(storedData) : [];
+    // -----------------------------
+    // 1️⃣ Load & validate local data
+    // -----------------------------
+    let existingEvents: Event[] = [];
 
-    // ✅ Check how many times page has been loaded
-    const loadCountData = await AsyncStorage.getItem('page_load_count');
-    let loadCount = loadCountData ? parseInt(loadCountData) : 0;
-    loadCount += 1;
-    await AsyncStorage.setItem('page_load_count', String(loadCount));
-
-    // ✅ On first load — fetch all posts from backend
-    if (loadCount === 1 || existingEvents.length === 0) {
-      const response = await axios.get(`${DEV_BASE_URL}/home/`, { timeout: 10000 });
-      if (response?.data && Array.isArray(response.data)) {
-        const backendEvents: Event[] = response.data.map((item: any, index: number) => ({
-          id: item.id || index + 1000,
-          title: item.title || 'Untitled Event',
-          description: item.description || item.caption || 'No description',
-          date: item.date || new Date().toISOString(),
-          location: item.location || 'TBD',
-          image: item.image || 'https://example.com/default.jpg',
-          isJoined: false,
-        }));
-
-        await AsyncStorage.setItem('backend_events', JSON.stringify(backendEvents));
-        console.log('✅ All backend posts fetched and saved locally');
+    try {
+      const storedData = await AsyncStorage.getItem('backend_events');
+      const parsed = storedData ? JSON.parse(storedData) : [];
+      if (Array.isArray(parsed)) {
+        existingEvents = parsed;
       }
+    } catch {
+      // Corrupted local storage → reset safely
+      existingEvents = [];
+      await AsyncStorage.removeItem('backend_events');
+    }
+
+    // Show cached data immediately
+    setEvents([...hardcodedEvents, ...existingEvents]);
+
+    // -----------------------------
+    // 2️⃣ Determine sync cursor safely
+    // -----------------------------
+    const latestId =
+      existingEvents.length > 0
+        ? Math.max(...existingEvents.map(e => Number(e.id) || 0))
+        : 0;
+
+    // -----------------------------
+    // 3️⃣ Ask backend for updates
+    // -----------------------------
+    const response = await axios.get(
+      `${DEV_BASE_URL}/home/${latestId}`,
+      { timeout: 10000 }
+    );
+
+    const data = response.data;
+
+    // -----------------------------
+    // 4️⃣ Handle "no new data"
+    // -----------------------------
+    if (data === 0 || data == null) {
       return;
     }
 
-    // ✅ Every second load only — check for new post
-    if (loadCount % 2 === 0 && existingEvents.length > 0) {
-      const latestId = Math.max(...existingEvents.map((e) => e.id));
-      const response = await axios.get(`${DEV_BASE_URL}/home/${latestId}`, { timeout: 10000 });
+    // -----------------------------
+    // 5️⃣ Normalize backend response
+    // -----------------------------
+    let incomingPosts: Event[] = [];
 
-      if (response?.data === 0) {
-        console.log('🟢 No new posts found');
-      } else if (response?.data && typeof response.data === 'object') {
-        const newPost: Event = {
-          id: response.data.id || latestId + 1,
-          title: response.data.title || 'Untitled Event',
-          description: response.data.description || response.data.caption || 'No description',
-          date: response.data.date || new Date().toISOString(),
-          location: response.data.location || 'TBD',
-          image: response.data.image || 'https://example.com/default.jpg',
+    if (Array.isArray(data)) {
+      incomingPosts = data;
+    } else if (typeof data === 'object') {
+      incomingPosts = [data];
+    } else {
+      // Unknown response → ignore safely
+      return;
+    }
+
+    // -----------------------------
+    // 6️⃣ Map & sanitize incoming data
+    // -----------------------------
+    const mappedIncoming: Event[] = incomingPosts
+      .filter(item => item && item.id != null)
+      .map(item => ({
+        id: Number(item.id),
+        title: item.title || 'Untitled Event',
+        description:
+          item.description || item.caption || 'No description',
+        date: item.date || new Date().toISOString(),
+        location: item.location || 'TBD',
+        image: item.image || '',
+        isJoined: false,
+      }));
+
+    // -----------------------------
+    // 7️⃣ Merge by ID (dedupe + update)
+    // -----------------------------
+    const eventMap = new Map<number, Event>();
+
+    // Add existing events
+    for (const e of existingEvents) {
+      eventMap.set(Number(e.id), e);
+    }
+
+    // Add / overwrite with backend events
+    for (const e of mappedIncoming) {
+      eventMap.set(Number(e.id), e);
+    }
+
+    // -----------------------------
+    // 8️⃣ Convert back to sorted array
+    // -----------------------------
+    const mergedEvents = Array.from(eventMap.values()).sort(
+      (a, b) => Number(a.id) - Number(b.id)
+    );
+
+    // -----------------------------
+    // 9️⃣ Detect backend deletion/reset
+    // -----------------------------
+    // If backend returned posts with IDs LOWER than what we sent,
+    // it likely means backend was reset or data deleted.
+    const backendMaxId = Math.max(...mappedIncoming.map(e => e.id), 0);
+
+    if (backendMaxId < latestId) {
+      // Backend reset detected → trust backend more
+      // Optional strategy: refetch everything
+      console.warn('⚠️ Backend reset detected, re-syncing fully');
+
+      const fullResponse = await axios.get(`${DEV_BASE_URL}/home/`);
+      if (Array.isArray(fullResponse.data)) {
+        const freshEvents = fullResponse.data.map((item: any) => ({
+          id: Number(item.id),
+          title: item.title || 'Untitled Event',
+          description:
+            item.description || item.caption || 'No description',
+          date: item.date || new Date().toISOString(),
+          location: item.location || 'TBD',
+          image: item.image || '',
           isJoined: false,
-        };
+        }));
 
-        const updatedEvents = [...existingEvents, newPost];
-        await AsyncStorage.setItem('backend_events', JSON.stringify(updatedEvents));
-        console.log('🆕 New post added to local storage');
+        await AsyncStorage.setItem(
+          'backend_events',
+          JSON.stringify(freshEvents)
+        );
+        setEvents([...hardcodedEvents, ...freshEvents]);
+        return;
       }
     }
+
+    // -----------------------------
+    // 🔟 Persist & update UI
+    // -----------------------------
+    await AsyncStorage.setItem(
+      'backend_events',
+      JSON.stringify(mergedEvents)
+    );
+
+    setEvents([...hardcodedEvents, ...mergedEvents]);
   } catch (error) {
-    console.error('❌ Error fetching backend events:', error);
+    console.error('❌ Event sync failed', error);
+    // UI still shows cached data → safe failure
   }
 };
 
-// ✅ Load events from AsyncStorage (and fetch backend in background)
-useEffect(() => {
-  const loadEvents = async () => {
+
+  // --------------------------
+  // Load events from storage
+  // --------------------------
+  const loadEventsFromStorage = async () => {
     try {
       const storedData = await AsyncStorage.getItem('backend_events');
       const localEvents = storedData ? JSON.parse(storedData) : [];
-      const combinedEvents = [...hardcodedEvents, ...localEvents];
-      setEvents(combinedEvents);
-      console.log('📦 Loaded events from local storage + hardcoded');
+      setEvents([...hardcodedEvents, ...localEvents]);
+      console.log('📦 Loaded events from storage + hardcoded');
     } catch (error) {
       console.error('❌ Error loading events from AsyncStorage:', error);
     }
   };
 
-  loadEvents();
-  fetchBackendEvents(); // background update logic
-}, []);
+  // --------------------------
+  // Run on first mount and on every focus
+  // --------------------------
+  useFocusEffect(
+    useCallback(() => {
+      loadEventsFromStorage();
+      fetchBackendEvents();
+    }, [])
+  );
 
-// ✅ Fetch announcement with cache (unchanged)
-useEffect(() => {
-  const fetchAnnouncement = async () => {
-    const BASE_URL = DEV_BASE_URL;
-    const saveToStorage = async (data: any) => {
-      try {
-        await AsyncStorage.setItem('announcement', JSON.stringify(data));
-      } catch (error) {
-        console.error('Error saving announcement to storage:', error);
-      }
-    };
+  // --------------------------
+  // Fetch announcement with cache
+  // --------------------------
 
-    try {
-      const cached = await AsyncStorage.getItem('announcement');
-      if (cached) {
-        setAnnouncement(JSON.parse(cached));
-      } else {
-        const defaultData = { title: '📢 Summer Vacation', description: 'Class starting on Aug 19' };
-        setAnnouncement(defaultData);
-      }
-
-      const response = await axios.get(`${BASE_URL}/announcements/`, { timeout: 10000 });
-      if (response?.data) {
-        setAnnouncement(response.data);
-        await saveToStorage(response.data);
-        console.log('✅ Announcement fetched and cached');
-      }
-    } catch (error) {
-      console.error('❌ Failed to fetch announcement:', error.message);
-    } finally {
-      setAnnouncementLoading(false);
-    }
-  };
-
-  fetchAnnouncement();
-}, []);
 
 // Rest of your UI code (unchanged)
 const handleUploadPress = () => {
@@ -172,14 +242,8 @@ const renderEventItem = ({ item: event }: { item: Event }) => (
     user={{ id: String(event.id), name: event.title }}
     title={event.title}
     content={event.description}
-    location={event.location}
-    timestamp={event.date}
-    likes={event.isJoined ? 1 : 0}
-    comments={0}
-    shares={0}
-    isLiked={event.isJoined}
-    isBookmarked={false}
-    onLike={() => {}}
+   
+   
   />
 );
 
@@ -209,6 +273,9 @@ const renderEventItem = ({ item: event }: { item: Event }) => (
 
 
 
+
+
+
   return (
   <>
     <ScrollView style={styles.container}>
@@ -227,29 +294,21 @@ const renderEventItem = ({ item: event }: { item: Event }) => (
         <CommunityLinks />
       </View>
 
-      <CommunityTabs activeTab={activeTab} onTabChange={setActiveTab} />
+     {/* <CommunityTabs activeTab={activeTab} onTabChange={setActiveTab} /> */}
 
       <View style={styles.contentArea}>
         <View style={styles.announcementContainer}>
-          {announcementLoading ? (
-            <Text>Loading announcement...</Text>
-          ) : announcement ? (
-            <FeaturedAnnouncement
-              title={`📢 ${announcement.title}`}
-              description={announcement.description}
-            />
-          ) : (
-            <Text>No announcements available</Text>
-          )}
+              <FeaturedAnnouncement />
         </View>
+
 
         <View style={{ alignItems: 'flex-end', marginTop: -60, marginBottom: 25 }}>
           <Text style={{ fontSize: 30, color: '#2a4365' }}>→</Text>
         </View>
 
         <VideoSection activeTab={activeTab} />
-        {renderContent()}
-      </View>
+           {renderContent()}
+         </View>
     </ScrollView>
 
     {/* 👇 Add Bottom Navigation outside the scroll */}
@@ -311,7 +370,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   contentArea: {
-    padding: 3,
+    padding: 7,
   },
   sectionTitle: {
     fontSize: 18,

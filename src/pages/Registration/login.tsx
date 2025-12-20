@@ -43,39 +43,11 @@ const Login: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { login } = useAuth();
 
-  // React Native does NOT have document.cookie
-  // Adjust or remove CSRF handling as needed
+/*
   const getCSRFToken = () => {
     return '';
   };
-
-
-
-
-
-  
-//code here
-
-
-
-
-
-
-
-
-
- useEffect(() => {
-    const checkLogin = async () => {
-      const token = await AsyncStorage.getItem('accessToken');
-      if (token) {
-        navigation.reset({
-          index: 0,
-          routes: [{ name: 'Main' }],
-        });
-      }
-    };
-    checkLogin();
-  }, [navigation]);
+*/
 
 
   const handleSubmit = async () => {
@@ -85,78 +57,58 @@ const Login: React.FC = () => {
      try {
     const response = await axios.post(
       `${DEV_BASE_URL}/loginroute/`,
-      { email, password }, // send as object, not JSON string
+      { email, password },
       {
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRFToken': getCSRFToken(),
+       
         },
       }
     );
 
 
-// write code here
-
-
-
-
-
-
-
-
   const data = response.data;
-  console.log('Backend response while login data here:', response.data); // <-- Add this line
-const university_data = response.data.university_datas;
-console.log('Fetched university data: from backend her this is the finale and i sleep nowe', university_data);
+console.log('Backend response while login data here:', response.data);
 
 
-  if (
-  response.status === 200 &&
-  data.access &&
-  data.refresh &&
-  data.user
-    ) {
+  if (response.status === 200 && data.access && data.user) {
   await AsyncStorage.setItem('accessToken', data.access);
-  await AsyncStorage.setItem('refreshToken', data.refresh);
+  const success = true;
+ // await AsyncStorage.setItem('refreshToken', data.refresh);
   await AsyncStorage.setItem('userData', JSON.stringify(data.user));
-  const success = await setItem('token', data.access);
+  //const success = await setItem('token', data.access);  // save 
 
   console.log('Backend response while login data here:', response.data);
 
-
-
-if (university_data) {
+const university_data = response.data.university_datas; // this is the university data from backend received after the successful login
+console.log('Fetched university data: from backend her this is the finale and i sleep nowe', university_data);
+        if (university_data) {
   await saveUniversityDataToSQLite(university_data);
   console.log('this data is connecting to the database here now, its working correctly', university_data);
 }
 
-
-
-
-  if (success) {
-    await login(data.access);
-    console.log("Login successful, token saved. and now connecting to backend here");
-    // Fetch university data after login
-;
-
-
-
-
   navigation.reset({
-      index: 0,
-      routes: [{ name: 'Main' }],
-    });
-  } else {
-    setError('Failed to save authentication token');
+        index: 0,
+        routes: [{ name: 'Main' }],
+      });
+    } else {
+      setError(data.error || 'Login failed: Invalid credentials or server error.');
+    }
+  } catch (err) {
+    console.error('Login error:', err);
+    setError('Something went wrong. Please try again.');
+  } finally {
+    setIsLoading(false);
   }
-} else {
-  setError(data.error || 'Login failed: Invalid credentials or server error.');
-}
+};
 
-// Check if backend response has university name
+
+
+/* Check if backend response has university name
 if (data.user.university_name) {
  // setUniversity(data.user.university_name);
   await AsyncStorage.setItem('@selected_university', data.user.university_name);
+}
 }
     } catch (err) {
       console.error('Login error:', err);
@@ -165,7 +117,7 @@ if (data.user.university_name) {
       setIsLoading(false);
     }
   };
-
+*/
 
 
 
@@ -181,10 +133,8 @@ if (data.user.university_name) {
     >
       <View style={styles.card}>
         <View style={styles.header}>
-          <View style={styles.logoCircle}>
-            {/* Replace this with a proper SVG or Image if needed */}
-            <Text style={styles.logoText}>N</Text>
-          </View>
+         
+         
           <Text style={styles.title}>Icamp</Text>
           <Text style={styles.subtitle}>Get all information as Nepali students</Text>
         </View>

@@ -9,48 +9,62 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 
 
 //const db = initDB();
-
-
+// University data with IDs
 const universities = [
-  "University of Texas at Arlington",
-  "Texas State University",
-  "Dallas Community College",
-  "Texas A&M University",
-  "Texas Tech University",
+  { id: 1, name: "University of Texas at Arlington" },
+  { id: 2, name: "Texas State University" },
+  { id: 3, name: "Dallas Community College" },
+  { id: 4, name: "Texas A&M University" },
+  { id: 5, name: "Texas Tech University" },
 ];
 
-const selectableUniversities = ["University of Texas at Arlington"];
-
-
-
-
-
-
-
+// Only certain universities are selectable (by ID)
+const selectableUniversities = [1]; // IDs of selectable universities
 
 interface UniversitySelectorProps {
-  selectedUniversity: string;
-  onSelectUniversity: (university: string) => void;
+  selectedUniversityId: number;
+  onSelectUniversity: (universityId: number) => void;
 }
 
 const UniversitySelector: React.FC<UniversitySelectorProps> = ({
-  selectedUniversity,
+  selectedUniversityId,
   onSelectUniversity,
 }) => {
   const [modalVisible, setModalVisible] = useState(false);
+  const [currentUniversity, setCurrentUniversity] = useState<string>("");
 
- 
+  // Load selected university name from AsyncStorage on mount
+  useEffect(() => {
+    const loadSelectedUniversity = async () => {
+      try {
+        const storedId = await AsyncStorage.getItem("@selected_university");
+        if (storedId) {
+          const uniId = parseInt(storedId, 10);
+          const uni = universities.find(u => u.id === uniId);
+          if (uni) setCurrentUniversity(uni.name);
+        }
+      } catch (error) {
+        console.error("Error loading selected university", error);
+      }
+    };
+
+    loadSelectedUniversity();
+  }, []);
 
   // Handle selection + save in AsyncStorage
-  const handleSelect = async (uni: string) => {
-    if (selectableUniversities.includes(uni)) {
+  const handleSelect = async (uniId: number) => {
+    if (selectableUniversities.includes(uniId)) {
       try {
-        await AsyncStorage.setItem("@selected_university", uni);
-        onSelectUniversity(uni);
+        await AsyncStorage.setItem("@selected_university", uniId.toString());
+        const uni = universities.find(u => u.id === uniId);
+        if (uni) setCurrentUniversity(uni.name);
+        onSelectUniversity(uniId);
         setModalVisible(false);
       } catch (error) {
         console.error("Error saving university selection", error);
       }
+    } else {
+      console.log("This university is not selectable.");
     }
   };
 
@@ -64,9 +78,13 @@ const UniversitySelector: React.FC<UniversitySelectorProps> = ({
         style={styles.input}
         onPress={() => setModalVisible(true)}
       >
-        <Text style={[styles.inputText, !selectedUniversity && styles.placeholder]}>
-          {selectedUniversity || "Select a university"}
-        </Text>
+        <Text style={[
+              styles.inputText,
+              !currentUniversity && styles.placeholder,
+             ]}>
+              {currentUniversity || "Select a university"}
+</Text>
+
         <Icon name="chevron-down" size={20} color="#666" />
       </TouchableOpacity>
 
@@ -78,24 +96,26 @@ const UniversitySelector: React.FC<UniversitySelectorProps> = ({
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <FlatList
-              data={universities}
-              keyExtractor={(item) => item}
-              renderItem={({ item }) => {
-                const disabled = !selectableUniversities.includes(item);
-                return (
-                  <TouchableOpacity
-                    style={[styles.modalItem, disabled && styles.disabledItem]}
-                    disabled={disabled}
-                    onPress={() => handleSelect(item)}
-                  >
-                    <Text style={[styles.modalItemText, disabled && styles.disabledText]}>
-                      {item}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              }}
-            />
+           <FlatList
+  data={universities}
+  keyExtractor={(item) => item.id.toString()}
+  renderItem={({ item }) => {
+    const disabled = !selectableUniversities.includes(item.id);
+
+    return (
+      <TouchableOpacity
+        style={[styles.modalItem, disabled && styles.disabledItem]}
+        disabled={disabled}
+        onPress={() => handleSelect(item.id)}
+      >
+        <Text style={[styles.modalItemText, disabled && styles.disabledText]}>
+          {item.name}
+        </Text>
+      </TouchableOpacity>
+    );
+  }}
+/>
+
             <TouchableOpacity
               onPress={() => setModalVisible(false)}
               style={styles.closeButton}
@@ -110,17 +130,17 @@ const UniversitySelector: React.FC<UniversitySelectorProps> = ({
 };
 
 const styles = StyleSheet.create({
-  label: { fontSize: 14, marginBottom: 4 },
+  label: { fontSize: 14, marginBottom: 2 },
   input: {
     borderWidth: 1,
     borderColor: '#ccc',
-    padding: 14,
+    padding: 4,
     borderRadius: 8,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
-  inputText: { fontSize: 16 },
+  inputText: { fontSize: 14 },
   placeholder: { color: '#999' },
   modalOverlay: {
     flex: 1,

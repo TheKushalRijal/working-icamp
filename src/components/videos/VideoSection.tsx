@@ -21,7 +21,7 @@ interface VideoSectionProps {
 const sampleVideos: Video[] = [
   {
     id: 1,
-    url: 'https://www.youtube.com/u5W0AJXsp4c',
+    url: 'https://www.youtube.com/watch?v=u5W0AJXsp4c',
     thumbnail: 'https://img.youtube.com/vi/u5W0AJXsp4c/maxresdefault.jpg',
     author: 'user'
   },
@@ -36,6 +36,8 @@ const sampleVideos: Video[] = [
 
 
 ];
+
+
 
 const fetchVideosFromSQLite = async (): Promise<Video[]> => {
   const db = await SQLite.openDatabase({ name: 'university.db', location: 'default' });
@@ -68,6 +70,9 @@ const extractYouTubeId = (url: string) => {
   return match ? match[1] : null;
 };
 
+
+
+
 const VideoSection: React.FC<VideoSectionProps> = ({ activeTab, videos: propVideos }) => {
   const [videos, setVideos] = useState<Video[]>(propVideos || sampleVideos);
   const [loading, setLoading] = useState(true);
@@ -76,7 +81,7 @@ const VideoSection: React.FC<VideoSectionProps> = ({ activeTab, videos: propVide
   const [selectedUniversity, setSelectedUniversity] = useState<string | null>(null);
   const playerRefs = useRef<{ [key: string]: any }>({});
   const screenWidth = Dimensions.get('window').width;
-  const cardWidth = screenWidth - 24; // Full width minus margins (12px on each side)
+  const cardWidth = screenWidth -28; // Full width minus margins (12px on each side)
 
   const handleVideoClick = (videoId: string | number) => {
     if (playingVideoId === videoId) {
@@ -178,7 +183,7 @@ const VideoSection: React.FC<VideoSectionProps> = ({ activeTab, videos: propVide
 
 
 
-  // Function to fetch community videos (to be used later on click)
+  /* Function to fetch community videos (to be used later on click)
   const fetchCommunityVideos = async () => {
     try {
       setLoading(true);
@@ -201,7 +206,7 @@ const VideoSection: React.FC<VideoSectionProps> = ({ activeTab, videos: propVide
       setLoading(false);
     }
   };
-
+*/
   if (loading) {
     return (
       <View style={styles.container}>
@@ -210,59 +215,66 @@ const VideoSection: React.FC<VideoSectionProps> = ({ activeTab, videos: propVide
     );
   }
 
-  return (
-    
-    <View style={styles.container}>
-     
-      {videos.length > 0 ? (
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.scrollViewContent}
-          decelerationRate="fast"
-          snapToInterval={cardWidth + 12}
-          snapToAlignment="start"
-          contentOffset={{ x: 0, y: 0 }}
-        >
-          {videos.map((video) => (
-            <TouchableOpacity 
-              key={video.id} 
+return (
+  <View style={styles.container}>
+    {videos.length > 0 ? (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.scrollViewContent}
+        decelerationRate="fast"
+        snapToInterval={cardWidth + 12}
+        snapToAlignment="start"
+        contentOffset={{ x: 0, y: 0 }}
+      >
+        {videos.map((video) => {
+          // ✅ FIX: extract YouTube ID safely HERE
+          const videoId = extractYouTubeId(video.url);
+
+          return (
+            <TouchableOpacity
+              key={video.id}
               style={[styles.videoCard, { width: cardWidth }]}
               onPress={() => handleVideoClick(video.id)}
               activeOpacity={0.9}
             >
               <View style={styles.videoWrapper}>
-                      <View style={styles.thumbnailContainer}>
-                        {playingVideoId === video.id ? (
-                          <YoutubePlayer
-                            height={200}
-                            width={cardWidth}
-                            play={true}
-                            videoId={video.url.split('/embed/')[1]}
-                            // 👈 Removed .split('/embed/')[1]
-                            onChangeState={event => {
-                              if (event === 'ended') setPlayingVideoId(null);
-                            }}
-                            webViewStyle={{ borderRadius: 12 }}
-                          />
-                        ) : (
-                          <Image source={{ uri: video.thumbnail }} style={{ width: '100%', height: 200, borderRadius: 12 }} />
-                        )}
-                      </View>
-                    </View>
-
+                <View style={styles.thumbnailContainer}>
+                  {playingVideoId === video.id && videoId ? (
+                    <YoutubePlayer
+                      height={200}
+                      width={cardWidth}
+                      play={true}
+                      videoId={videoId}
+                      onChangeState={(event) => {
+                        if (event === 'ended') setPlayingVideoId(null);
+                      }}
+                      webViewStyle={{ borderRadius: 12 }}
+                    />
+                  ) : (
+                    <Image
+                      source={{ uri: video.thumbnail }}
+                      style={{
+                        width: '100%',
+                        height: 200,
+                        borderRadius: 12,
+                      }}
+                    />
+                  )}
+                </View>
+              </View>
             </TouchableOpacity>
-          ))}
-        </ScrollView>
-      ) : (
-        <View style={styles.emptyStateContainer}>
-          <Text style={styles.emptyStateText}>
-            No videos available in {activeTab === 'your-community' ? 'your' : 'campus'} community yet
-          </Text>
-        </View>
-      )}
-    </View>
-  );
+          );
+        })}
+      </ScrollView>
+    ) : (
+      <View style={styles.emptyStateContainer}>
+        <Text style={styles.emptyStateText}>No videos available</Text>
+      </View>
+    )}
+  </View>
+);
+  
 };
 
 const styles = StyleSheet.create({
@@ -284,7 +296,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   videoCard: {
-    marginRight: 12,
+    marginRight: 14,
     marginLeft: 0,
     borderRadius: 12,
     overflow: 'hidden',
@@ -303,7 +315,7 @@ const styles = StyleSheet.create({
   },
   videoWrapper: {
     width: '100%',
-    height: 200,
+    height: 150,
     backgroundColor: '#f0f0f0',
     borderRadius: 12,
     overflow: 'hidden',

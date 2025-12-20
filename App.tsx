@@ -28,25 +28,30 @@ import Housings from './src/pages/housings';
 import NepaliCalendar from './src/components/calander/calander';
 import BottomNav from './src/components/navigation/BottomNav';
 import CommunityGroupsScreen from './src/profileredirect/important/groups';
-const Stack = createNativeStackNavigator();
 import LawyersScreen from './src/profileredirect/important/lawyers';
 import AuthLoading from './src/pages/Registration/splashscreen';
 import DiscountApp from './src/profileredirect/community/discounts';
 import NameDescriptionList from './src/profileredirect/important/scammers';
 import splitmain from './src/split/splitmain';
+import Healthinsurance from './src/profileredirect/important/Insurance';
 
+import TermsAndPrivac from './src/profileredirect/important/termsandcondition';
 
-
+import DocumentHubScreen from './src/Documentlogic/DocumentHubScreen';
+const Stack = createNativeStackNavigator();
 
 function AppNavigator() {
   return (
      <Stack.Navigator initialRouteName="AuthLoading" screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="Main" component={DocumentHubScreen} />
+
       <Stack.Screen name="AuthLoading" component={AuthLoading} />
+
       {/* Show BottomNav as the main app shell for authenticated users */}
       <Stack.Screen name="Login" component={Login} />
       <Stack.Screen name="splitmain" component={splitmain} />
 
-      <Stack.Screen name="Main" component={BottomNav} />
+      <Stack.Screen name="Mains" component={BottomNav} />
       <Stack.Screen name="Lawyers" component={LawyersScreen} />
 
       <Stack.Screen name="Rides" component={RidersApp} />
@@ -54,6 +59,7 @@ function AppNavigator() {
       {/* Screens outside BottomNav (like auth & onboarding) */}
       <Stack.Screen name="Landing" component={LandingRedirect} />
       <Stack.Screen name="Register" component={Register} />
+      <Stack.Screen name="insurance" component={Healthinsurance} />
 
       {/* Optional: other screens you want modally or outside of tabs */}
       <Stack.Screen name="UniversitySelection" component={UniversitySelection} />
@@ -67,6 +73,7 @@ function AppNavigator() {
       <Stack.Screen name="Test" component={Test} />
       <Stack.Screen name="Outside" component={Outside} />
       <Stack.Screen name="Upload" component={UploadPost} />
+      <Stack.Screen name="terms" component={TermsAndPrivac} />
 
 
       <Stack.Screen name="Discounts" component={DiscountApp} />

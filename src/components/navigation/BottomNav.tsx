@@ -1,7 +1,7 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Home, Calendar, MessageCircle, User } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Home as HomeIcon, Calendar, MessageCircle, User } from 'lucide-react-native';
 
 import HomeStack from './MainStack';
 import NepaliCalendar from '../calander/calander';
@@ -10,7 +10,7 @@ import RidersApp from '../../rideshare/rideshare';
 import StoresNearMe from '../../pages/stores';
 import Housings from '../../pages/housings';
 import ProfilePage from '../../profile/profilehome';
-
+import Home from '../../pages/Home';
 const Tab = createBottomTabNavigator();
 
 const BottomNav = () => {
@@ -33,7 +33,7 @@ const BottomNav = () => {
           tabBarIcon: ({ color, size }) => {
             switch (route.name) {
               case 'Home':
-                return <Home color={color} size={size} />;
+            return <HomeIcon color={color} size={size} />;
               case 'Events':
                 return <Calendar color={color} size={size} />;
               case 'Rides':
@@ -50,7 +50,7 @@ const BottomNav = () => {
           },
         })}
       >
-        <Tab.Screen name="Home" component={HomeStack} />
+        <Tab.Screen name="Home" component={Home} />
         <Tab.Screen name="Events" component={NepaliCalendar} />
         <Tab.Screen name="Places" component={StoresNearMe} />
         <Tab.Screen name="Housings" component={Housings} />

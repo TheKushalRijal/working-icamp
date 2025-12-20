@@ -10,7 +10,7 @@ const AuthLoading: React.FC = () => {
       const token = await AsyncStorage.getItem('accessToken');
       navigation.reset({
         index: 0,
-        routes: [{ name: token ? 'Main' : 'Login' }],
+        routes: [{ name: token ? 'Main' : 'Main' }],
       });
     };
     checkToken();
