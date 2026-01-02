@@ -40,6 +40,8 @@ type RootStackParamList = {
   Lawyers:undefined;
   Discounts: undefined;
   insurance:undefined;
+  Driving: undefined;
+  Docs: undefined;
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -270,10 +272,10 @@ const ProfilePage = () => {
             
                 <TouchableOpacity
                   style={styles.actionButton}
-                  onPress={() => navigation.navigate('Discounts')}
+                  onPress={() => navigation.navigate('Docs')}
                 >
                   <MaterialIcon name="message" size={20} color="#4F46E5" />
-                  <Text style={styles.actionText}>Students discounts</Text>
+                  <Text style={styles.actionText}>Documents</Text>
                 </TouchableOpacity>
 
               <TouchableOpacity 

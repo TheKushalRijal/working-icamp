@@ -12,8 +12,14 @@ import {
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { launchImageLibrary } from "react-native-image-picker";
 import RNFS from "react-native-fs";
+import { TextInput } from "react-native";
+import { Image } from "react-native";
+import { DOC_TYPES } from "./mockDocuments";
 
 export default function UploadCanvas({ visible, onClose, onUpload }) {
+  const [pendingAsset, setPendingAsset] = React.useState(null);
+const [nameCanvasVisible, setNameCanvasVisible] = React.useState(false);
+const [documentName, setDocumentName] = React.useState("");
   // --- Permission handling (Android only)
   const requestImagePermission = async () => {
   if (Platform.OS !== "android") return true;
@@ -44,16 +50,16 @@ const saveFileLocally = async (asset) => {
     await RNFS.mkdir(targetDir);
   }
 
-  // IMPORTANT: handle content:// URIs
   const sourcePath =
     asset.uri.startsWith("content://")
-      ? await RNFS.stat(asset.uri).then(stat => stat.path)
+      ? (await RNFS.stat(asset.uri)).path
       : asset.uri.replace("file://", "");
 
   await RNFS.copyFile(sourcePath, targetPath);
 
   return `file://${targetPath}`;
 };
+
 
 
   // --- Pick image + process
@@ -64,44 +70,51 @@ const handlePickImage = async () => {
     quality: 1,
   });
 
-  if (result.didCancel) return;
-
-  if (result.errorCode) {
-    Alert.alert("Error", result.errorMessage || "Failed to pick image");
-    return;
-  }
+  if (result.didCancel || result.errorCode) return;
 
   const asset = result.assets?.[0];
   if (!asset) return;
 
+setPendingAsset(asset);
+setDocumentName("");
+setNameCanvasVisible(true);
+
+
+};
+
+
+
+const handleConfirmName = async () => {
   try {
-    const localUri = await saveFileLocally(asset);
+    const localUri = await saveFileLocally(pendingAsset);
+
+    if (!localUri) {
+      Alert.alert("Upload failed", "Could not save image");
+      return;
+    }
 
     const document = {
       id: Date.now().toString(),
-      type: "img",
-      title: asset.fileName || "Uploaded Image",
-      localUri,
-      mimeType: asset.type,
-      size: asset.fileSize,
-      status: "local",
+      type: DOC_TYPES.IMG,
+      title: documentName,
+      uri: localUri,
+      mimeType: pendingAsset.type,
+      size: pendingAsset.fileSize,
       createdAt: Date.now(),
     };
 
+    onUpload(document);
 
-    const onsuccessselected = (document) => {
-
-    }
-
-
-
-    onUpload?.(document);
+    // cleanup
+    setPendingAsset(null);
+    setNameCanvasVisible(false);
     onClose();
   } catch (err) {
-    Alert.alert("Error", "Failed to save file locally");
+    Alert.alert("Error", "Failed to save image");
     console.error(err);
   }
 };
+
 
 
   return (
@@ -154,6 +167,45 @@ const handlePickImage = async () => {
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>
 
+<Modal visible={nameCanvasVisible} transparent animationType="slide">
+  <View style={styles.overlay}>
+    <View style={styles.nameSheet}>
+      <Text style={styles.nameTitle}>Name this image</Text>
+
+      {/* Image preview */}
+      {pendingAsset?.uri && (
+        <View style={styles.previewContainer}>
+          <Image
+            source={{ uri: pendingAsset.uri }}
+            style={styles.previewImage}
+            resizeMode="cover"
+          />
+        </View>
+      )}
+
+      {/* Name input */}
+      <TextInput
+        placeholder="Enter image name"
+        value={documentName}
+        onChangeText={setDocumentName}
+        style={styles.nameInput}
+        autoFocus
+      />
+
+      {/* Actions */}
+      <View style={styles.actionRow}>
+        <TouchableOpacity onPress={() => setNameCanvasVisible(false)}>
+          <Text style={styles.cancelText}>Cancel</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity onPress={handleConfirmName}>
+          <Text style={styles.saveText}>Save</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
+
 
 
 
@@ -176,7 +228,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     paddingTop: 16,
     paddingHorizontal: 16,
-    paddingBottom: 24,
+    paddingBottom: 34,
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
   },
@@ -214,4 +266,57 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "500",
   },
+
+nameSheet: {
+  backgroundColor: "#fff",
+  padding: 16,
+  borderTopLeftRadius: 16,
+  borderTopRightRadius: 16,
+},
+
+nameTitle: {
+  fontSize: 16,
+  fontWeight: "600",
+  marginBottom: 12,
+  color: "#111",
+},
+
+previewContainer: {
+  height: 160,
+  borderRadius: 12,
+  overflow: "hidden",
+  backgroundColor: "#f2f2f2",
+  marginBottom: 12,
+},
+
+previewImage: {
+  width: "100%",
+  height: "100%",
+},
+
+nameInput: {
+  borderWidth: 1,
+  borderColor: "#ddd",
+  borderRadius: 10,
+  paddingHorizontal: 12,
+  paddingVertical: 10,
+  fontSize: 15,
+  marginBottom: 16,
+},
+
+actionRow: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+},
+
+saveText: {
+  color: "#007AFF",
+  fontSize: 15,
+  fontWeight: "600",
+},
+
+
+
+
 });

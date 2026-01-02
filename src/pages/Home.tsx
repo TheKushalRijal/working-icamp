@@ -12,10 +12,12 @@ import UserPost from '../components/UserPost';
 import { PROD_BASE_URL } from '@env';
 import CommunityLinks from '../components/navigation/CommunityLink';
 import CommunityTabs from '../components/navigation/CommunityTabs';
-const DEV_BASE_URL = 'http://10.0.2.2:8000';
-const BASE_URL=DEV_BASE_URL;
+//const DEV_BASE_URL = 'http://10.0.2.2:8000';
 import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
+
+import { DEV_BASE_URL } from '../config/config.ts';
+const BASE_URL=DEV_BASE_URL;
 
 import FeaturedAnnouncement from '../components/announcements/FeaturedAnnouncements';
 
