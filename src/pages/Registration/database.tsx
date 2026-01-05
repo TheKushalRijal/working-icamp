@@ -6,6 +6,8 @@
  */
 
 import SQLite from 'react-native-sqlite-storage';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { STORAGE_KEY } from '../Home';
 
 
 export interface UniversityData {
@@ -17,6 +19,11 @@ export interface UniversityData {
   restaurants: any[];
   housing: any[];
   resources: any[];
+  scam_groups?: any[];
+
+  community_groups?: any[];
+  health_insurance?: any[];
+
 }
 
 
@@ -210,8 +217,169 @@ export const saveUniversityDataToSQLite = async (data: UniversityData) => {
           );
         }
       }
+
+
+await tx.executeSql(
+  `CREATE TABLE IF NOT EXISTS scam_watch_group (
+    id INTEGER PRIMARY KEY,
+    name TEXT,
+    platform TEXT,
+    description TEXT,
+    link TEXT,
+    icon TEXT
+  );`
+);
+if (data.scam_groups?.length) {
+  for (const group of data.scam_groups) {
+    await tx.executeSql(
+      `INSERT OR REPLACE INTO scam_watch_group
+       (id, name, platform, description, link, icon)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        group.id,
+        group.name,
+        group.platform,
+        group.description,
+        group.link,
+        group.icon,
+      ]
+    );
+  }
+}
+
+
+
+
+
+
+
+await tx.executeSql(
+  `CREATE TABLE IF NOT EXISTS community_group (
+    id INTEGER PRIMARY KEY,
+    name TEXT,
+    platform TEXT,
+    description TEXT,
+    link TEXT,
+    icon TEXT,
+    verified INTEGER,
+    category TEXT,
+    members TEXT
+  );`
+);
+if (data.community_groups?.length) {
+  for (const group of data.community_groups) {
+    await tx.executeSql(
+      `INSERT OR REPLACE INTO community_group
+       (id, name, platform, description, link, icon, verified, category, members)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        group.id,
+        group.name,
+        group.platform,
+        group.description,
+        group.link,
+        group.icon,
+        group.verified ? 1 : 0,
+        group.category,
+        group.members,
+      ]
+    );
+  }
+}
+
+
+
+
+
+
+
+await tx.executeSql(
+  `CREATE TABLE IF NOT EXISTS health_insurance (
+    id INTEGER PRIMARY KEY,
+    universityid TEXT,
+    insurancename TEXT,
+    address TEXT,
+    phonenumber TEXT,
+    hours TEXT,
+    services TEXT,
+    description TEXT
+  );`
+);
+if (data.health_insurance?.length) {
+  for (const insurance of data.health_insurance) {
+    await tx.executeSql(
+      `INSERT OR REPLACE INTO health_insurance
+       (id, universityid, insurancename, address, phonenumber, hours, services, description)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        insurance.id,
+        insurance.universityid,
+        insurance.insurancename,
+        insurance.address,
+        insurance.phonenumber,
+        insurance.hours,
+        insurance.services,
+        insurance.description,
+      ]
+    );
+  }
+}
+
+
+
+
+const savePostsToLocalStorage = (posts) => {
+  try {
+    if (!Array.isArray(posts)) return;
+
+    // 🔹 Get existing posts (if any)
+    const existingData = localStorage.getItem(STORAGE_KEY);
+    let existingPosts = [];
+
+    if (existingData) {
+      existingPosts = JSON.parse(existingData);
+      if (!Array.isArray(existingPosts)) {
+        existingPosts = [];
+      }
+    }
+
+    // 🔹 Merge posts by ID (backend is source of truth)
+    const postMap = new Map();
+
+    // existing first
+    existingPosts.forEach(post => {
+      if (post?.id != null) {
+        postMap.set(post.id, post);
+      }
     });
-    console.log('Successfully saved university data to SQLite', data);
+
+    // backend overwrites / adds
+    posts.forEach(post => {
+      if (post?.id != null) {
+        postMap.set(post.id, post);
+      }
+    });
+
+    const mergedPosts = Array.from(postMap.values());
+
+    // 🔹 Save back to localStorage
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(mergedPosts));
+
+    console.log('✅ Posts saved to localStorage:', mergedPosts.length);
+  } catch (error) {
+    console.error('❌ Failed to save posts to localStorage:', error);
+  }
+};
+
+
+
+
+
+
+
+
+    });
+    console.log('Successfully saved university data to SQLite=================== this is debugging right now', data);
     // After saving, log the saved data for verification
   } catch (error) {
     console.error('Error saving university data to SQLite:', error);

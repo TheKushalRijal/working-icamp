@@ -113,7 +113,7 @@ const fetchHousingFromSQLite = async (): Promise<Housing[]> => {
 
 
 useEffect(() => {
-  console.log("SQLite error or no data data here, will try backend next.", );
+console.log("SQLite error or no data data here, will try backend next.", selectedUniversity);
 
   const fetchHousing = async () => {
     //if (!selectedUniversity) return;
@@ -235,16 +235,9 @@ useEffect(() => {
     <View style={styles.container}>
       {/* Header */}
       <TopNav 
-  title="UTA Housing Options" 
-  rightAction={
-    <TouchableOpacity
-      onPress={() => setShowFilters(!showFilters)}
-      style={styles.filterButton}
-    >
-      <Feather name={showFilters ? "x" : "filter"} size={18} color="#fff" />
-      <Text style={styles.filterButtonText}>Filters</Text>
-    </TouchableOpacity>
-  }
+        title="UTA Housing Options" 
+  
+  
 />
 
       <View style={styles.mainContent}>

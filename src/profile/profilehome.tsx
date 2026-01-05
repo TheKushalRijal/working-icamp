@@ -81,6 +81,10 @@ const DEFAULT_PROFILE_DATA: ProfileData = {
 
 
 
+
+
+
+
 const ProfilePage = () => {
   const navigation = useNavigation<NavigationProp>();
   const [isConnected, setIsConnected] = useState<boolean>(false);
@@ -243,9 +247,10 @@ const ProfilePage = () => {
                   {/* Profile Content */}
 
           <View style={styles.profileInfo}>
+              {/* Profile Content 
             <Text style={styles.name}>{profileData.fullName}</Text>
             <Text style={styles.university}>{profileData.university}</Text>
-                              {/* Profile Content 
+                            
 
             <View style={styles.statsContainer}>
               <View style={styles.statItem}>

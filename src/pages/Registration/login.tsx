@@ -1,4 +1,4 @@
-import React, { useState,useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -14,14 +14,11 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { useAuth } from '../../context/AuthContent';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { DEV_BASE_URL } from '@env';
 import axios from 'axios';
 import { saveUniversityDataToSQLite } from './database';
-//import { fetchUniversityData } from './selectuniversity';
-//import { saveUniversityDataToSQLite } from './selectuniversity';
-//import handleUniversityDataSave from './selectuniversity';
+import UniversitySelector from './selectuniversity';
 
-
+const DEV_BASE_URL = 'http://10.0.2.2:8000';
 
 // Define the navigation param list
 type RootStackParamList = {
@@ -39,68 +36,106 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  //const [university, setUniversity] = useState<string | null>(null);
+
+  // 🔹 moved here (was illegally inside handleSubmit)
+  const [selectedUniversity, setSelectedUniversity] = useState<string>('');
+  const codeInputs = useRef<Array<TextInput | null>>([]);
+const [selectedUniversityId, setSelectedUniversityId] = useState<number | null>(null);
+const [formData, setFormData] = useState<{ university?: string }>({});
+
   const navigation = useNavigation<NavigationProp>();
   const { login } = useAuth();
 
-/*
-  const getCSRFToken = () => {
-    return '';
-  };
-*/
-
+  // 🔹 moved here (was illegally inside handleSubmit)
+  useEffect(() => {
+    async function fetchUniversity() {
+      try {
+        const university = await AsyncStorage.getItem('@selected_university');
+        if (university) {
+          setSelectedUniversity(university);
+          console.log(
+            'Selected university success in registrer---------------:',
+            university
+          );
+        }
+      } catch (error) {
+        console.error('Failed to load university from storage:', error);
+      }
+    }
+    fetchUniversity();
+  }, []);
 
   const handleSubmit = async () => {
     setIsLoading(true);
     setError('');
 
-     try {
-    const response = await axios.post(
-      `${DEV_BASE_URL}/loginroute/`,
-      { email, password },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-       
+    try {
+      const storedUniversityId = await AsyncStorage.getItem(
+        '@selected_university'
+      );
+      const universityId = storedUniversityId
+        ? parseInt(storedUniversityId, 10)
+        : null;
+
+      const response = await axios.post(
+        `${DEV_BASE_URL}/loginroute/`,
+        {
+          email,
+          password,
+          university: universityId,
         },
-      }
-    );
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
+      const data = response.data;
 
-  const data = response.data;
-console.log('Backend response while login data here:', response.data);
+      console.log(
+        'Backend response while login data here--------------------------',
+        data
+      );
 
+      if (response.status === 200 && data.access && data.user) {
+        await AsyncStorage.setItem('accessToken', data.access);
+        await AsyncStorage.setItem('userData', JSON.stringify(data.user));
 
-  if (response.status === 200 && data.access && data.user) {
-  await AsyncStorage.setItem('accessToken', data.access);
-  const success = true;
- // await AsyncStorage.setItem('refreshToken', data.refresh);
-  await AsyncStorage.setItem('userData', JSON.stringify(data.user));
-  //const success = await setItem('token', data.access);  // save 
+        console.log('Backend response while login data here:', data);
 
-  console.log('Backend response while login data here:', response.data);
+        const university_data = data;;
+        console.log(
+          'Fetched university data: from backend her this is the finale and i sleep nowe',
+          university_data
+        );
 
-const university_data = response.data.university_datas; // this is the university data from backend received after the successful login
-console.log('Fetched university data: from backend her this is the finale and i sleep nowe', university_data);
         if (university_data) {
-  await saveUniversityDataToSQLite(university_data);
-  console.log('this data is connecting to the database here now, its working correctly', university_data);
-}
+          await saveUniversityDataToSQLite(university_data);
+          console.log(
+            'this data is connecting to the database here now, its working correctly',
+            university_data
+          );
+        }
 
-  navigation.reset({
-        index: 0,
-        routes: [{ name: 'Main' }],
-      });
-    } else {
-      setError(data.error || 'Login failed: Invalid credentials or server error.');
+        navigation.reset({
+          index: 0,
+          routes: [{ name: 'Main' }],
+        });
+      } else {
+        setError(
+          data.error || 'Login failed: Invalid credentials or server error.'
+        );
+      }
+    } catch (err) {
+      console.error('Login error:', err);
+      setError('Something went wrong. Please try again.');
+    } finally {
+      setIsLoading(false);
     }
-  } catch (err) {
-    console.error('Login error:', err);
-    setError('Something went wrong. Please try again.');
-  } finally {
-    setIsLoading(false);
-  }
-};
+  };
+
+  
 
 
 
@@ -172,6 +207,29 @@ if (data.user.university_name) {
             style={styles.input}
             editable={!isLoading}
           />
+
+
+                <View>
+                    
+
+                <UniversitySelector
+                selectedUniversityId={selectedUniversityId}
+                onSelectUniversity={(id) => {
+                  setSelectedUniversityId(id);
+                  setFormData(prev => ({ ...prev, university: id.toString() }));
+                }}
+              />
+
+
+</View>
+
+
+
+
+
+
+
+
 
           <TouchableOpacity
             onPress={handleSubmit}

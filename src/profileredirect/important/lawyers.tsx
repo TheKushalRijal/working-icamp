@@ -10,9 +10,10 @@ import { DEV_BASE_URL } from '@env';
 
 // Fallback hardcoded data
 const fallbackUniversityLawyer = {
- name: '',
+    name: '',
     email: '',
     phone: '',
+    specialization: '',
 };
 
 const fallbackExternalLawyers = [
@@ -21,6 +22,7 @@ const fallbackExternalLawyers = [
     name: 'Rijal Law',
     email: 'info@rijallaw.com',
     phone: '18559974525',
+    Specialization: 'Immigration Law',
   },
   
 ];
@@ -45,62 +47,77 @@ const LawyersScreen = () => {
   const [error, setError] = useState(null);
 
   // Fetch data from backend or fallback to hardcoded data
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Try to fetch from backend
-        const [uniResponse, extResponse] = await Promise.all([
-          axios.get('https://your-backend-api.com/university-lawyer'),
-          axios.get('https://your-backend-api.com/external-lawyers'),
-        ]);
+useEffect(() => {
+  const fetchData = async () => {
+    const universityid = await AsyncStorage.getItem('@selected_university');
 
-        const response = await axios.get(`${BASE_URL}/universitylawyers/`, {
-          timeout: 1000, // 1 second timeout
-        });
+    try {
+      // 1️⃣ FIRST: Try to load from AsyncStorage
+      const savedData = await AsyncStorage.getItem('lawyersData');
 
+      if (savedData) {
+        const parsedData = JSON.parse(savedData);
 
-
-        setUniversityLawyer(uniResponse.data);
-        setExternalLawyers(extResponse.data);
-        setFilteredLawyers(extResponse.data);
-        
-        // Save to AsyncStorage
-        await AsyncStorage.setItem('lawyersData', JSON.stringify({
-          universityLawyer: uniResponse.data,
-          externalLawyers: extResponse.data
-        }));
-      } catch (err) {
-        console.log('Error fetching data:', err);
-        setError(err);
-        
-        // Try to load from AsyncStorage
-        try {
-          const savedData = await AsyncStorage.getItem('lawyersData');
-          if (savedData) {
-            const parsedData = JSON.parse(savedData);
-            setUniversityLawyer(parsedData.universityLawyer);
-            setExternalLawyers(parsedData.externalLawyers);
-            setFilteredLawyers(parsedData.externalLawyers);
-          } else {
-            // Fallback to hardcoded data
-            setUniversityLawyer(fallbackUniversityLawyer);
-            setExternalLawyers(fallbackExternalLawyers);
-            setFilteredLawyers(fallbackExternalLawyers);
-          }
-        } catch (storageErr) {
-          console.log('Storage error:', storageErr);
-          // Fallback to hardcoded data
-          setUniversityLawyer(fallbackUniversityLawyer);
-          setExternalLawyers(fallbackExternalLawyers);
-          setFilteredLawyers(fallbackExternalLawyers);
+        if (
+          parsedData?.universityLawyer &&
+          parsedData?.externalLawyers &&
+          parsedData.externalLawyers.length > 0
+        ) {
+          // ✅ Data exists → use it and DO NOT call backend
+          setUniversityLawyer(parsedData.universityLawyer);
+          setExternalLawyers(parsedData.externalLawyers);
+          setFilteredLawyers(parsedData.externalLawyers);
+          setLoading(false);
+          return;
         }
-      } finally {
-        setLoading(false);
       }
-    };
 
-    fetchData();
-  }, []);
+      const response = await axios.get(`${BASE_URL}/universitylawyers/`, {
+              params: {
+                universityid: universityid,
+              },
+            });
+
+
+      if (
+        response.data &&
+        response.data.universityLawyer &&
+        response.data.externalLawyers
+      ) {
+        setUniversityLawyer(response.data.universityLawyer);
+        setExternalLawyers(response.data.externalLawyers);
+        setFilteredLawyers(response.data.externalLawyers);
+
+        // Save to AsyncStorage
+        await AsyncStorage.setItem(
+          'lawyersData',
+          JSON.stringify({
+            universityLawyer: response.data.universityLawyer,
+            externalLawyers: response.data.externalLawyers,
+          })
+        );
+      } else {
+        // 3️⃣ Backend returned invalid data → fallback
+        setUniversityLawyer(fallbackUniversityLawyer);
+        setExternalLawyers(fallbackExternalLawyers);
+        setFilteredLawyers(fallbackExternalLawyers);
+      }
+    } catch (err) {
+      console.log('Error fetching data:', err);
+      setError(err);
+
+      // 4️⃣ FINAL FALLBACK (storage already checked above)
+      setUniversityLawyer(fallbackUniversityLawyer);
+      setExternalLawyers(fallbackExternalLawyers);
+      setFilteredLawyers(fallbackExternalLawyers);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+}, []);
+
 
   // Search filtering
   useEffect(() => {
@@ -159,13 +176,19 @@ const LawyersScreen = () => {
           />
 
           <Text style={styles.header}>University Lawyer</Text>
-          {universityLawyer && (
-            <View style={styles.universityCard}>
-              <Text style={styles.name}>{universityLawyer.name}</Text>
-              <ContactButton label="Email" value={universityLawyer.email} isEmail />
-              <ContactButton label="Phone" value={universityLawyer.phone} />
-            </View>
-          )}
+
+            {universityLawyer && universityLawyer.name ? (
+              <View style={styles.universityCard}>
+                <Text style={styles.name}>{universityLawyer.name}</Text>
+                <ContactButton label="Email" value={universityLawyer.email} isEmail />
+                <ContactButton label="Phone" value={universityLawyer.phone} />
+              </View>
+            ) : (
+              <Text style={styles.noResults}>
+                No university lawyer available
+              </Text>
+            )}
+
 
           <Text style={styles.header}>Other Available Lawyers</Text>
           {filteredLawyers.length > 0 ? (

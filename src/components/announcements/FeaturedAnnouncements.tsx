@@ -32,6 +32,8 @@ const FeaturedAnnouncement: React.FC = () => {
     const syncAnnouncement = async () => {
       try {
         /* 1️⃣ READ FROM STORAGE */
+        const universityId = await AsyncStorage.getItem('@selected_university');
+
         const cachedRaw = await AsyncStorage.getItem('announcement');
         let cached: Announcement | null = null;
 
@@ -53,12 +55,18 @@ const FeaturedAnnouncement: React.FC = () => {
           );
           if (isMounted) setAnnouncement(FALLBACK_ANNOUNCEMENT);
         }
-
+        const DEV_BASE_URL = 'http://10.0.2.2:8000';
         /* 3️⃣ FETCH FROM BACKEND */
-        const response = await axios.get(
-          `${DEV_BASE_URL}/announcements/`,
-          { timeout: 10000 }
-        );
+              const response = await axios.get(
+              `${DEV_BASE_URL}/announcements/`,
+              {
+                timeout: 10000,
+                params: {
+                  universityid: universityId, // 👈 payload sent here
+                },
+              }
+            );
+          console.log("[FeaturedAnnouncement] DEV_BASE_URL:=============", DEV_BASE_URL)
 
         const backend: Announcement | null =
           response?.data?.title && response?.data?.description

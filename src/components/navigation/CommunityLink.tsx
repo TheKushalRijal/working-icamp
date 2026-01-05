@@ -14,7 +14,8 @@ import Feather from 'react-native-vector-icons/Feather';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import MaterialIcons from "react-native-vector-icons/MaterialIcons"
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import SQLite, { SQLTransaction, SQLError } from 'react-native-sqlite-storage';
+import SQLite from 'react-native-sqlite-storage';
+import type { SQLError } from 'react-native-sqlite-storage';
 
 const IconSets = {
  AntDesign,
@@ -27,6 +28,7 @@ const CommunityLinks: React.FC = () => {
   const navigation = useNavigation<any>(); // Add typing if you have defined your navigation types
 
   const links = [
+    { name: 'Docs', iconSet: 'AntDesign', iconName: 'car', route: 'Docs' },
     { name: 'Ride Share', iconSet: 'AntDesign', iconName: 'car', route: 'Rides' },
     { name: 'Logout', iconSet: 'MaterialIcons', iconName: 'login', route: 'Login' },
     { name: 'Bills', iconSet: 'Feather', iconName: 'home', route: 'lawyers' },

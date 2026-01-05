@@ -31,7 +31,6 @@ interface Restaurant {
   image: string;
   location: string;
   distance: string;
-  rating: number;
   featured: boolean;
   categories: string[];
 }
@@ -43,7 +42,6 @@ const fallbackData: Restaurant[] = [
     image: 'https://lh3.googleusercontent.com/p/AF1QipP-eD1EgjBl1WF86n-QPTFrKOerpS23_pvlSBbk=w143-h143-n-k-no',
     location: '1212 Royal Pkwy, Euless, TX 76040',
     distance: '0.5 miles',
-    rating: 4.5,
     categories: ['Nepali Mandir', 'Nepali society'],
     featured: true
   },
@@ -53,7 +51,7 @@ const fallbackData: Restaurant[] = [
     image: 'https://lh3.googleusercontent.com/p/AF1QipN0S1kPVh486_BdprFHkL-bNmteWhXwq2HfySB6=s1360-w1360-h1020',
     location: '312 College St, Arlington, TX 76010',
     distance: '0.5 miles',
-    rating: 4.5,
+ 
     categories: ['Free Coffee', 'Festival celebration'],
     featured: true
   },
@@ -63,7 +61,7 @@ const fallbackData: Restaurant[] = [
     image: 'https://lh3.googleusercontent.com/p/AF1QipOB1z4QvEEkk6otpY2h_TSZMYsOEB73HUPzonJ1=w408-h297-k-no',
     location: '200 E Abram St Suite 140, Arlington TX 76010',
     distance: '0.5 miles',
-    rating: 4.2,
+
     categories: ['Nepali Restuarent', 'Foods'],
     featured: false
   },
@@ -73,7 +71,7 @@ const fallbackData: Restaurant[] = [
     image: 'https://lh3.googleusercontent.com/p/AF1QipP_va-c3te6J4yQC1rf6_XGjVL0F_aovDlImFkP=w408-h724-k-no',
     location: '789 Elm Blvd, Dallas, TX',
     distance: '2.3 miles',
-    rating: 4.8,
+  
     categories: ['Nepali foods'],
     featured: false
   },
@@ -83,7 +81,7 @@ const fallbackData: Restaurant[] = [
     image: 'https://lh3.googleusercontent.com/p/AF1QipMs8g-kIE8FcGdQPg-Tn9OxFjwEax3xjCp33-IS=w426-h240-k-no',
     location: '3901 W Arkansas Ln #107A, Arlington, TX 76016',
     distance: '3.1 miles',
-    rating: 3.9,
+  
     categories: ['Nepali food'],
     featured: false
   },
@@ -93,7 +91,7 @@ const fallbackData: Restaurant[] = [
     image: 'https://lh3.googleusercontent.com/p/AF1QipNA89KlfXE0Lr3GfqdZIENKrssa9ww61dRNZZQA=w408-h306-k-no',
     location: '1215 S Cooper St, Arlington, TX 76010',
     distance: '3.1 miles',
-    rating: 3.9,
+ 
     categories: ['Asian items', 'indian store'],
     featured: false
   },
@@ -109,12 +107,7 @@ const StoresApp = () => {
   const [selectedUniversity, setSelectedUniversity] = useState<string | null>(null);
 
   // Animated value for scroll
-  const scrollY = React.useRef(new Animated.Value(0)).current;
-  const headerTranslateY = scrollY.interpolate({
-    inputRange: [0, 80],
-    outputRange: [0, -80],
-    extrapolate: 'clamp',
-  });
+ 
 
   useEffect(() => {
     async function fetchSelectedUniversity() {
@@ -333,28 +326,13 @@ const StoresApp = () => {
             </View>
           </View>
         }
-        animatedStyle={{ transform: [{ translateY: headerTranslateY }] }}
       />
       <Animated.ScrollView
         contentContainerStyle={styles.scrollContainer}
         scrollEventThrottle={16}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
-          { useNativeDriver: true }
-        )}
+       
       >
-        <View style={styles.searchContainer}>
-          <View style={styles.searchInputContainer}>
-            <MaterialIcons name="search" size={20} color="#9ca3af" style={styles.searchIcon} />
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search stores by name, location, or category..."
-              placeholderTextColor="#9ca3af"
-              value={query}
-              onChangeText={setQuery}
-            />
-          </View>
-        </View>
+        
 
         {isLoading ? (
           <View style={styles.loadingContainer}>

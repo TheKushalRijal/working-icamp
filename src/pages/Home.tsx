@@ -17,7 +17,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { useCallback } from 'react';
 
 import { DEV_BASE_URL } from '../config/config.ts';
-const BASE_URL=DEV_BASE_URL;
+//const BASE_URL=DEV_BASE_URL;
 
 import FeaturedAnnouncement from '../components/announcements/FeaturedAnnouncements';
 
@@ -36,289 +36,208 @@ interface Event {
   id: number;
   title: string;
   description: string;
- // date: string;
- // location: string;
- // image?: string;
- // isJoined: boolean;
 }
+
+export const STORAGE_KEY = 'backend_events';
 
 const Home: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
   const { events: hardcodedEvents } = useEvents();
 
-  const [events, setEvents] = useState<Event[]>(hardcodedEvents);
+  const [events, setEvents] = useState<Event[]>([]);
   const [activeTab, setActiveTab] = useState<'your-community' | 'campus-community'>('your-community');
-
-  const [featuredVideos, setFeaturedVideos] = useState<any[]>([]);
-
-  // --------------------------
-  // Fetch backend events and cache in AsyncStorage
-  // --------------------------
-const fetchBackendEvents = async () => {
-  try {
-    // -----------------------------
-    // 1️⃣ Load & validate local data
-    // -----------------------------
-    let existingEvents: Event[] = [];
-
-    try {
-      const storedData = await AsyncStorage.getItem('backend_events');
-      const parsed = storedData ? JSON.parse(storedData) : [];
-      if (Array.isArray(parsed)) {
-        existingEvents = parsed;
-      }
-    } catch {
-      // Corrupted local storage → reset safely
-      existingEvents = [];
-      await AsyncStorage.removeItem('backend_events');
-    }
-
-    // Show cached data immediately
-    setEvents([...hardcodedEvents, ...existingEvents]);
-
-    // -----------------------------
-    // 2️⃣ Determine sync cursor safely
-    // -----------------------------
-    const latestId =
-      existingEvents.length > 0
-        ? Math.max(...existingEvents.map(e => Number(e.id) || 0))
-        : 0;
-
-    // -----------------------------
-    // 3️⃣ Ask backend for updates
-    // -----------------------------
-    const response = await axios.get(
-      `${DEV_BASE_URL}/home/${latestId}`,
-      { timeout: 10000 }
-    );
-
-    const data = response.data;
-
-    // -----------------------------
-    // 4️⃣ Handle "no new data"
-    // -----------------------------
-    if (data === 0 || data == null) {
-      return;
-    }
-
-    // -----------------------------
-    // 5️⃣ Normalize backend response
-    // -----------------------------
-    let incomingPosts: Event[] = [];
-
-    if (Array.isArray(data)) {
-      incomingPosts = data;
-    } else if (typeof data === 'object') {
-      incomingPosts = [data];
-    } else {
-      // Unknown response → ignore safely
-      return;
-    }
-
-    // -----------------------------
-    // 6️⃣ Map & sanitize incoming data
-    // -----------------------------
-    const mappedIncoming: Event[] = incomingPosts
-      .filter(item => item && item.id != null)
-      .map(item => ({
-        id: Number(item.id),
-        title: item.title || 'Untitled Event',
-        description:
-          item.description || item.caption || 'No description',
-        date: item.date || new Date().toISOString(),
-        location: item.location || 'TBD',
-        image: item.image || '',
-        isJoined: false,
-      }));
-
-    // -----------------------------
-    // 7️⃣ Merge by ID (dedupe + update)
-    // -----------------------------
-    const eventMap = new Map<number, Event>();
-
-    // Add existing events
-    for (const e of existingEvents) {
-      eventMap.set(Number(e.id), e);
-    }
-
-    // Add / overwrite with backend events
-    for (const e of mappedIncoming) {
-      eventMap.set(Number(e.id), e);
-    }
-
-    // -----------------------------
-    // 8️⃣ Convert back to sorted array
-    // -----------------------------
-    const mergedEvents = Array.from(eventMap.values()).sort(
-      (a, b) => Number(a.id) - Number(b.id)
-    );
-
-    // -----------------------------
-    // 9️⃣ Detect backend deletion/reset
-    // -----------------------------
-    // If backend returned posts with IDs LOWER than what we sent,
-    // it likely means backend was reset or data deleted.
-    const backendMaxId = Math.max(...mappedIncoming.map(e => e.id), 0);
-
-    if (backendMaxId < latestId) {
-      // Backend reset detected → trust backend more
-      // Optional strategy: refetch everything
-      console.warn('⚠️ Backend reset detected, re-syncing fully');
-
-      const fullResponse = await axios.get(`${DEV_BASE_URL}/home/`);
-      if (Array.isArray(fullResponse.data)) {
-        const freshEvents = fullResponse.data.map((item: any) => ({
-          id: Number(item.id),
-          title: item.title || 'Untitled Event',
-          description:
-            item.description || item.caption || 'No description',
-          date: item.date || new Date().toISOString(),
-          location: item.location || 'TBD',
-          image: item.image || '',
-          isJoined: false,
-        }));
-
-        await AsyncStorage.setItem(
-          'backend_events',
-          JSON.stringify(freshEvents)
-        );
-        setEvents([...hardcodedEvents, ...freshEvents]);
-        return;
-      }
-    }
-
-    // -----------------------------
-    // 🔟 Persist & update UI
-    // -----------------------------
-    await AsyncStorage.setItem(
-      'backend_events',
-      JSON.stringify(mergedEvents)
-    );
-
-    setEvents([...hardcodedEvents, ...mergedEvents]);
-  } catch (error) {
-    console.error('❌ Event sync failed', error);
-    // UI still shows cached data → safe failure
-  }
-};
-
+const sortByLatest = (events: Event[]) =>
+  [...events].sort((a, b) => b.id - a.id);
 
   // --------------------------
-  // Load events from storage
+  // Load events from storage FIRST (this fixes your bug)
   // --------------------------
   const loadEventsFromStorage = async () => {
     try {
-      const storedData = await AsyncStorage.getItem('backend_events');
-      const localEvents = storedData ? JSON.parse(storedData) : [];
-      setEvents([...hardcodedEvents, ...localEvents]);
-      console.log('📦 Loaded events from storage + hardcoded');
+      const storedData = await AsyncStorage.getItem(STORAGE_KEY);
+      const localEvents: Event[] = storedData ? JSON.parse(storedData) : [];
+          const combined = sortByLatest([...hardcodedEvents, ...localEvents]);
+          setEvents(combined);
+      console.log('📦 UI loaded from AsyncStorage immediately');
+      return localEvents;
     } catch (error) {
       console.error('❌ Error loading events from AsyncStorage:', error);
+      return [];
     }
   };
 
   // --------------------------
-  // Run on first mount and on every focus
+  // Fetch backend events (background only)
+  // --------------------------
+  const fetchBackendEvents = async (existingEvents: Event[]) => {
+    try {
+      const latestId =
+        existingEvents.length > 0
+          ? Math.max(...existingEvents.map(e => Number(e.id) || 0))
+          : 0;
+      console.log('🔄 Fetching backend events...........................');
+
+        console.log('➡️ Sending request to backend with latestId:', latestId);
+    const universityId = await AsyncStorage.getItem("@selected_university");
+
+const startTime = Date.now();
+const DEV_BASE_URL = 'http://10.0.2.2:8000';
+ const response = await axios.get(
+      `${DEV_BASE_URL}/home/${latestId}/`,
+      {
+        timeout: 5000,
+        params: {
+          universityid: universityId, // 👈 matches backend argument
+        },
+      }
+    );
+
+const endTime = Date.now();
+
+console.log('⏱️ Backend response time (ms):', endTime - startTime);
+console.log('📡 Raw Axios response:', response);
+console.log('📦 response.data:', response.data);
+console.log('📦 response.data type:', typeof response.data);
+console.log(
+  '📦 response.data length (if array):',
+  Array.isArray(response.data) ? response.data.length : 'N/A'
+);
+      const data = response.data;
+      // Backend says no new data → DO NOTHING
+      if (data === 0 || data == null) {
+  // 👇 IMPORTANT FIX
+        if (existingEvents.length === 0) {
+          await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify([]));
+        }
+        return;
+}
+
+
+      const incomingPosts: Event[] = Array.isArray(data) ? data : [data];
+
+      const mappedIncoming: Event[] = incomingPosts
+        .filter(item => item && item.id != null)
+        .map(item => ({
+          id: Number(item.id),
+          title: item.title || 'Untitled Event',
+          description: item.description || 'No description',
+        }));
+
+      // Merge ONLY new items
+      const eventMap = new Map<number, Event>();
+      existingEvents.forEach(e => eventMap.set(e.id, e));
+      mappedIncoming.forEach(e => eventMap.set(e.id, e));
+
+      const mergedEvents = Array.from(eventMap.values()).sort(
+          (a, b) => b.id - a.id   // 🔥 latest first
+        );
+
+
+      await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(mergedEvents));
+      setEvents([...hardcodedEvents, ...mergedEvents]);
+      console.log('✅ UI updated with backend additions only');
+
+    } catch (error) {
+      console.log("error");
+    }
+  };
+
+  // --------------------------
+  // Run on focus (STRICT ORDER)
   // --------------------------
   useFocusEffect(
     useCallback(() => {
-      loadEventsFromStorage();
-      fetchBackendEvents();
+      let mounted = true;
+
+      const run = async () => {
+        const localEvents = await loadEventsFromStorage();
+        if (mounted) {
+          fetchBackendEvents(localEvents);
+        }
+      };
+
+      run();
+
+      return () => {
+        mounted = false;
+      };
     }, [])
   );
 
   // --------------------------
-  // Fetch announcement with cache
+  // UI helpers
   // --------------------------
+  const handleUploadPress = () => {
+    navigation.navigate('UploadPost');
+  };
 
-
-// Rest of your UI code (unchanged)
-const handleUploadPress = () => {
-  navigation.navigate('UploadPost');
-};
-
-const renderEventItem = ({ item: event }: { item: Event }) => (
-  <UserPost
-    key={event.id}
-    id={event.id}
-    user={{ id: String(event.id), name: event.title }}
-    title={event.title}
-    content={event.description}
-   
-   
-  />
-);
+  const renderEventItem = ({ item }: { item: Event }) => (
+    <UserPost
+      key={item.id}
+      id={item.id}
+      user={{ id: String(item.id), name: item.title }}
+      title={item.title}
+      content={item.description}
+    />
+  );
 
   const renderContent = () => (
-  <>
-    {events.length > 0 ? (
-      <>
-        <Text style={styles.sectionTitle}>
-          {activeTab === 'your-community' ? 'Your Events' : 'Campus Events'}
-        </Text>
-        <FlatList
-          data={events}
-          renderItem={renderEventItem}
-          keyExtractor={(item) => `event-${item.id}`}
-          scrollEnabled={false}
-          ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
-        />
-      </>
-    ) : (
-      <View style={styles.emptyStateContainer}>
-        <Text style={styles.emptyStateText}>No events available</Text>
-      </View>
-    )}
-  </>
-);
+    <>
+      {events.length > 0 ? (
+        <>
+          <Text style={styles.sectionTitle}>
+            {activeTab === 'your-community' ? 'Your Events' : 'Campus Events'}
+          </Text>
 
-
-
-
-
-
+          <FlatList
+            data={events}
+            renderItem={renderEventItem}
+            keyExtractor={(item) => `event-${item.id}`}
+            scrollEnabled={false}
+          />
+        </>
+      ) : (
+        <View style={styles.emptyStateContainer}>
+          <Text>No events available</Text>
+        </View>
+      )}
+    </>
+  );
 
   return (
-  <>
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <View style={styles.logoTitleWrapper}>
-            <View style={styles.logoCircle}>
-              <Text style={{ color: '#DC143C', fontWeight: 'bold' }}>NS</Text>
+    <>
+      <ScrollView style={styles.container}>
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <View style={styles.logoTitleWrapper}>
+              <View style={styles.logoCircle}>
+                <Text style={{ color: '#DC143C', fontWeight: 'bold' }}>NS</Text>
+              </View>
+              <Text style={styles.welcomeText}>Icamp</Text>
             </View>
-            <Text style={styles.welcomeText}>Icamp</Text>
+            <TouchableOpacity style={styles.loginBtn} onPress={handleUploadPress}>
+              <Icon name="plus" size={24} color="white" />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity style={styles.loginBtn} onPress={handleUploadPress}>
-            <Icon name="plus" size={24} color="white" />
-          </TouchableOpacity>
-        </View>
-        <CommunityLinks />
-      </View>
-
-     {/* <CommunityTabs activeTab={activeTab} onTabChange={setActiveTab} /> */}
-
-      <View style={styles.contentArea}>
-        <View style={styles.announcementContainer}>
-              <FeaturedAnnouncement />
+          <CommunityLinks />
         </View>
 
+        <View style={styles.contentArea}>
+          <View style={styles.announcementContainer}>
+            <FeaturedAnnouncement />
+          </View>
 
-        <View style={{ alignItems: 'flex-end', marginTop: -60, marginBottom: 25 }}>
-          <Text style={{ fontSize: 30, color: '#2a4365' }}>→</Text>
+          <View style={{ alignItems: 'flex-end', marginTop: -60, marginBottom: 25 }}>
+            <Text style={{ fontSize: 30, color: '#2a4365' }}>→</Text>
+          </View>
+
+          <VideoSection activeTab={activeTab} />
+          {renderContent()}
         </View>
-
-        <VideoSection activeTab={activeTab} />
-           {renderContent()}
-         </View>
-    </ScrollView>
-
-    {/* 👇 Add Bottom Navigation outside the scroll */}
-  </>
-);
-
+      </ScrollView>
+    </>
+  );
 };
-
 
 
 const styles = StyleSheet.create({

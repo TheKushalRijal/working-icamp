@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Platform, ScrollView, Dimensions, TouchableOpacity, Image } from 'react-native';
 import axios from 'axios';
 import YoutubePlayer from 'react-native-youtube-iframe';
-import { DEV_BASE_URL } from '@env';
+import { DEV_BASE_URL } from '../../config/config';
+
 import SQLite from 'react-native-sqlite-storage';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 interface Video {
@@ -20,7 +21,7 @@ interface VideoSectionProps {
 // Sample videos data with minimal info
 const sampleVideos: Video[] = [
   {
-    id: 1,
+    id: 3,
     url: 'https://www.youtube.com/watch?v=u5W0AJXsp4c',
     thumbnail: 'https://img.youtube.com/vi/u5W0AJXsp4c/maxresdefault.jpg',
     author: 'user'
@@ -75,13 +76,13 @@ const extractYouTubeId = (url: string) => {
 
 const VideoSection: React.FC<VideoSectionProps> = ({ activeTab, videos: propVideos }) => {
   const [videos, setVideos] = useState<Video[]>(propVideos || sampleVideos);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); 
   const [error, setError] = useState<string | null>(null);
   const [playingVideoId, setPlayingVideoId] = useState<string | number | null>(null);
   const [selectedUniversity, setSelectedUniversity] = useState<string | null>(null);
   const playerRefs = useRef<{ [key: string]: any }>({});
   const screenWidth = Dimensions.get('window').width;
-  const cardWidth = screenWidth -28; // Full width minus margins (12px on each side)
+  const cardWidth = screenWidth - 28;// Full width minus margins (12px on each side)
 
   const handleVideoClick = (videoId: string | number) => {
     if (playingVideoId === videoId) {
@@ -100,15 +101,10 @@ const VideoSection: React.FC<VideoSectionProps> = ({ activeTab, videos: propVide
   };
 
   // Function to get videos based on active tab
-  const getFilteredVideos = (videos: Video[]) => {
-    return videos.filter((video: Video) => {
-      if (activeTab === 'your-community') {
-        return video.author === 'user';
-      } else {
-        return video.author === 'campus';
-      }
-    });
-  };
+const getFilteredVideos = (videos: Video[]) => {
+  return videos; // 👈 no filtering, just pass-through
+};
+
 
   // Add university fetch effect
   useEffect(() => {
@@ -119,60 +115,75 @@ const VideoSection: React.FC<VideoSectionProps> = ({ activeTab, videos: propVide
     getUniversity();
   }, []);
 
-  // Update main fetch effect
+  // -------------------------
+  // EFFECT 1: IMMEDIATE LOCAL LOAD
+  // -------------------------
   useEffect(() => {
-    if (propVideos && Array.isArray(propVideos)) {
-      setVideos(propVideos);
-      setLoading(false);
-      return;
-    }
+    let mounted = true;
 
+    const loadLocalVideos = async () => {
+      // If parent passed videos, use them immediately
+      if (propVideos && Array.isArray(propVideos)) {
+        setVideos(getFilteredVideos(propVideos));
+        return;
+      }
 
-
-
-
-    
-    const fetchVideos = async () => {
+      // Try SQLite
       try {
-        setLoading(true);
-        console.log("video resource started here")
-        // 1️⃣ Try SQLite first
-        try {
-          const sqliteData = await fetchVideosFromSQLite();
-          if (sqliteData && sqliteData.length > 0) {
-            const filteredVideos = getFilteredVideos(sqliteData);
-            setVideos(filteredVideos);
-            console.log(`✅ Videos for loaded from SQLite this is the video data we have here now`,sqliteData);
-            return;
-          }
-        } catch (sqliteError) {
-          console.log("SQLite error or no data, will try backend next.", sqliteError);
+        const sqliteData = await fetchVideosFromSQLite();
+        if (mounted && sqliteData.length > 0) {
+          setVideos(getFilteredVideos(sqliteData));
+          console.log("⚡ Videos loaded immediately from SQLite");
         }
-
-        // 2️⃣ Try backend if SQLite fails or is empty
-        const BASE_URL = DEV_BASE_URL;
-        const response = await axios.get(`${BASE_URL}/videoss/`, {
-          timeout: 1000
-        });
-
-        if (response.data && Array.isArray(response.data) && response.data.length > 0) {
-          const filteredVideos = getFilteredVideos(response.data);
-          setVideos(filteredVideos);
-          console.log(`✅ Videos for ${selectedUniversity} fetched from backend`);
-          return;
-        }
-
-      } catch (error) {
-        console.error(`❌ Error fetching videos for ${selectedUniversity}:`, error);
-        setVideos(sampleVideos);
-        console.warn('⚠️ Using fallback video data');
-      } finally {
-        setLoading(false);
+      } catch (e) {
+        console.log("SQLite load failed, keeping fallback videos");
       }
     };
 
-    fetchVideos();
+    loadLocalVideos();
+
+    return () => {
+      mounted = false;
+    };
   }, [activeTab, propVideos]);
+
+  // -------------------------
+  // EFFECT 2: BACKEND SYNC (BACKGROUND)
+  // -------------------------
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchBackendVideos = async () => {
+      try {
+        const BASE_URL = 'http://10.0.2.2:8000';
+        const universityId = await AsyncStorage.getItem("@selected_university");
+
+        const response = await axios.get(`${BASE_URL}/videos/`, );
+console.log("[VideoSection] DEV_BASE_URL:===================================", BASE_URL)
+console.log('📡 Raw Axios response:', response.data);
+        if (!mounted) return;
+
+        if (Array.isArray(response.data) && response.data.length > 0) {
+          setVideos(prev => {
+            const map = new Map(prev.map(v => [v.id, v]));
+            response.data.forEach(v => map.set(v.id, v));
+            return getFilteredVideos(Array.from(map.values()));
+          });
+
+          console.log("🔄 Videos merged from backend");
+        }
+      } catch (error) {
+        console.log("Backend fetch failed silently");
+      }
+    };
+
+    fetchBackendVideos();
+
+    return () => {
+      mounted = false;
+    };
+  }, [activeTab]);
+
 
 
 

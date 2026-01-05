@@ -78,7 +78,8 @@ useEffect(() => {
       const university = await AsyncStorage.getItem('@selected_university');
       if (university) {
         setFormData(prev => ({ ...prev, university }));
-        setSelectedUniversity(university); // if you also keep selectedUniversity state
+        setSelectedUniversity(university);
+        console.log("Selected university success in registrer---------------:", university); // if you also keep selectedUniversity state
       }
     } catch (error) {
       console.error('Failed to load university from storage:', error);
