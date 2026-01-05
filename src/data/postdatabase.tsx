@@ -7,49 +7,89 @@ const dbPromise = SQLite.openDatabase({
   location: 'default',
 });
 
-export const initEventDB = async () => {
+/**
+ * Matches Django Post model
+ */
+export interface PostEntity {
+  id: number;
+  title: string;
+  description: string;
+
+}
+
+/**
+ * Initialize Post table
+ */
+export const initPostDB = async () => {
   const db = await dbPromise;
+
   await db.executeSql(`
-    CREATE TABLE IF NOT EXISTS event (
+    CREATE TABLE IF NOT EXISTS post (
       id INTEGER PRIMARY KEY,
-      title TEXT,
-      description TEXT
+      title TEXT NOT NULL,
+      description TEXT,
+
     );
   `);
+
   return db;
 };
 
-export const getAllEvents = async () => {
+/**
+ * Get all posts (latest first)
+ */
+export const getAllPosts = async (): Promise<PostEntity[]> => {
   const db = await dbPromise;
   const [res] = await db.executeSql(
-    `SELECT * FROM event ORDER BY id DESC`
+    `SELECT * FROM post ORDER BY created_at DESC`
   );
 
-  const events = [];
+  const posts: PostEntity[] = [];
   for (let i = 0; i < res.rows.length; i++) {
-    events.push(res.rows.item(i));
+    const row = res.rows.item(i);
+    posts.push({
+      id: Number(row.id),
+      title: row.title,
+      description: row.description,
+
+    });
   }
-  return events;
+
+  return posts;
 };
 
-export const getLatestEventId = async () => {
+/**
+ * Get latest post ID (for incremental sync if needed)
+ */
+export const getLatestPostId = async (): Promise<number> => {
   const db = await dbPromise;
   const [res] = await db.executeSql(
-    `SELECT MAX(id) as maxId FROM event`
+    `SELECT MAX(id) as maxId FROM post`
   );
-  return res.rows.item(0).maxId || 0;
+
+  return res.rows.item(0)?.maxId ?? 0;
 };
 
-export const saveEvents = async (events: Event[]) => {
-  if (!events.length) return;
+/**
+ * Save posts from backend
+ */
+export const savePosts = async (posts: PostEntity[]) => {
+  if (!posts.length) return;
 
   const db = await dbPromise;
+
   await db.transaction(tx => {
-    events.forEach(e => {
+    posts.forEach(post => {
       tx.executeSql(
-        `INSERT OR REPLACE INTO event (id, title, description)
-         VALUES (?, ?, ?)`,
-        [e.id, e.title, e.description]
+        `INSERT OR REPLACE INTO post
+         (id, title, description, visibility, created_at)
+         VALUES (?, ?, ?, ?, ?)`,
+        [
+          post.id,
+          post.title,
+          post.description,
+         
+        ]
       );
     });
   });

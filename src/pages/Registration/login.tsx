@@ -91,10 +91,20 @@ const [formData, setFormData] = useState<{ university?: string }>({});
         }
       );
 
+
+
+
+
+
+
+
+
+
+      
       const data = response.data;
 
       console.log(
-        'Backend response while login data here--------------------------',
+        'Backend response while login data here------------------------------------------------------------------------------',
         data
       );
 
@@ -104,11 +114,24 @@ const [formData, setFormData] = useState<{ university?: string }>({});
 
         console.log('Backend response while login data here:', data);
 
-        const university_data = data;;
+       // const university_data = data;;
         console.log(
           'Fetched university data: from backend her this is the finale and i sleep nowe',
-          university_data
+        //  university_data
         );
+
+const university_data = data.university_data;
+
+
+//await saveUniversityDataToSQLite(university_data);
+
+
+
+
+
+
+
+
 
         if (university_data) {
           await saveUniversityDataToSQLite(university_data);
@@ -212,13 +235,13 @@ if (data.user.university_name) {
                 <View>
                     
 
-                <UniversitySelector
-                selectedUniversityId={selectedUniversityId}
-                onSelectUniversity={(id) => {
-                  setSelectedUniversityId(id);
-                  setFormData(prev => ({ ...prev, university: id.toString() }));
-                }}
-              />
+     <UniversitySelector
+  selectedUniversityId={selectedUniversityId}
+  onSelectUniversity={(id) => {
+    setSelectedUniversityId(id);
+    setFormData(prev => ({ ...prev, university: id.toString() }));
+  }}
+/>
 
 
 </View>

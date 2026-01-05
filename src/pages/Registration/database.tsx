@@ -141,31 +141,21 @@ export const saveUniversityDataToSQLite = async (data: UniversityData) => {
       await tx.executeSql(
         `CREATE TABLE IF NOT EXISTS post (
           id INTEGER PRIMARY KEY,
-          username TEXT,
-          caption TEXT,
-          imagefield BLOB,
-          location TEXT,
-          latitude REAL,
-          longitude REAL,
-          timestamp TEXT,
-          university_name TEXT
+          title Text,
+          description TEXT
+         
         );`
       );
       if (data.posts?.length) {
         for (const post of data.posts) {
           await tx.executeSql(
-            `INSERT OR REPLACE INTO post (id, username, caption, imagefield, location, latitude, longitude, timestamp, university_name)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT OR REPLACE INTO post (id, title, description)
+             VALUES (?, ?, ?)`,
             [
               post.id,
-              post.username,
-              post.caption,
-              post.imagefield,
-              post.location,
-              post.latitude,
-              post.longitude,
-              post.timestamp,
-              data.university_name,
+              post.title,
+              post.description,
+         
             ]
           );
         }
@@ -327,7 +317,7 @@ if (data.health_insurance?.length) {
 
 
 
-
+/*
 const savePostsToLocalStorage = (posts) => {
   try {
     if (!Array.isArray(posts)) return;
@@ -372,14 +362,14 @@ const savePostsToLocalStorage = (posts) => {
 };
 
 
-
+*/
 
 
 
 
 
     });
-    console.log('Successfully saved university data to SQLite=================== this is debugging right now', data);
+    console.log('Successfully saved university data to SQLite', data);
     // After saving, log the saved data for verification
   } catch (error) {
     console.error('Error saving university data to SQLite:', error);

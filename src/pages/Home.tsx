@@ -46,7 +46,7 @@ const Home: React.FC = () => {
 
   const [events, setEvents] = useState<Event[]>([]);
   const [activeTab, setActiveTab] = useState<'your-community' | 'campus-community'>('your-community');
-const sortByLatest = (events: Event[]) =>
+  const sortByLatest = (events: Event[]) =>
   [...events].sort((a, b) => b.id - a.id);
 
   // --------------------------
@@ -58,7 +58,7 @@ const sortByLatest = (events: Event[]) =>
       const localEvents: Event[] = storedData ? JSON.parse(storedData) : [];
           const combined = sortByLatest([...hardcodedEvents, ...localEvents]);
           setEvents(combined);
-      console.log('📦 UI loaded from AsyncStorage immediately');
+      console.log('📦 UI loaded from AsyncStorage immediately this is he combine data here',combined);
       return localEvents;
     } catch (error) {
       console.error('❌ Error loading events from AsyncStorage:', error);
@@ -83,14 +83,12 @@ const sortByLatest = (events: Event[]) =>
 const startTime = Date.now();
 const DEV_BASE_URL = 'http://10.0.2.2:8000';
  const response = await axios.get(
-      `${DEV_BASE_URL}/home/${latestId}/`,
-      {
-        timeout: 5000,
-        params: {
-          universityid: universityId, // 👈 matches backend argument
-        },
-      }
-    );
+  `${DEV_BASE_URL}/home/${universityId}/${latestId}/`,
+  {
+    timeout: 5000,
+  }
+);
+console.log('✅ Received response from backend test data ---------------------', response.data);
 
 const endTime = Date.now();
 
