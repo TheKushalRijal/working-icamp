@@ -7,35 +7,35 @@ import { BASE_URL } from '@env';
 
 // Fallback hardcoded data
 const fallbackHealthInsurance = {
-  provider: 'University Health Plan',
+  id: '1',
+  insurance_name: 'University Health Plan',
   phone: '1-800-HEALTH',
-  email: 'health@university.edu',
-  website: 'https://health.university.edu',
-  coverage: 'Full medical, dental, and vision coverage',
-  emergencyContact: '1-888-EMERGENCY'
+  emergency_contact: '911',
+  website: 'https://www.university.edu/health-insurance',
+  address: 'On-campus Health Center',
+  description: 'Full coverage for enrolled students',
+  cost: 0,
 };
 
-const fallbackClinics = [
-  {
-    id: '1',
-    name: 'University Health Center',
-    address: '123 Campus Drive, University City',
-    phone: '1-555-UNI-CARE',
-    hours: 'Mon-Fri: 8AM-6PM, Sat: 9AM-1PM',
-    services: ['Primary Care', 'Urgent Care', 'Vaccinations', 'Physicals'],
-    isEmergency: false
-  },
-  {
-    id: '2',
-    name: 'Campus Dental Clinic',
-    address: '456 Health Sciences Blvd',
-    phone: '1-555-DENTAL',
-    hours: 'Mon-Thu: 8AM-5PM, Fri: 8AM-12PM',
-    services: ['Cleanings', 'Fillings', 'Emergency Dental'],
-    isEmergency: false
-  },
-  
-];
+
+
+
+
+
+
+
+
+
+
+import SQLite from 'react-native-sqlite-storage';
+
+const db = SQLite.openDatabase(
+  { name: 'university.db', location: 'default' },
+  () => console.log('DB opened'),
+  error => console.log('DB open error', error)
+);
+
+
 
 const ContactButton = ({ label, value, type }) => (
   <TouchableOpacity
@@ -51,94 +51,70 @@ const ContactButton = ({ label, value, type }) => (
 );
 
 const Healthinsurance = () => {
-  const [healthInsurance, setHealthInsurance] = useState(null);
-  const [clinics, setClinics] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+ const [healthInsurance, setHealthInsurance] = useState(null);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState(null);
+const [clinics, setClinics] = useState([]);
+
 
   // Fetch data with synchronization logic
-  useEffect(() => {
-  const fetchData = async () => {
-    try {
-      // 1️⃣ Get the latest health data from AsyncStorage
-      const storedData = await AsyncStorage.getItem('healthData');
-      let lastKnownId = 0;
+useEffect(() => {
+  fetchHealthInsurance();
+}, []);
 
-      if (storedData) {
-        const parsedData = JSON.parse(storedData);
-        lastKnownId = parsedData.lastUpdateId || 0;
-      }
+const fetchHealthInsurance = (showLoading = true) => {
+  if (showLoading) setLoading(true);
 
-      // 2️⃣ Get the selected university ID from AsyncStorage
-      const storedUniversityId = await AsyncStorage.getItem('@selected_university');
-      const universityId = storedUniversityId ? parseInt(storedUniversityId, 10) : 9999; // 9999 = default "all"
+  db.transaction(tx => {
+    tx.executeSql(
+    `SELECT
+     id,
+     university_id,
+     insurance_name,
+     phone,
+     emergency_contact,
+     website,
+     address,
+     description,
+     cost
+   FROM health_insurance
+   LIMIT 1`,
+  [],
 
-      // 3️⃣ Send request to backend with both lastUpdateId and universityId
-      const response = await axios.get(`${BASE_URL}/health-data/`, {
-        params: { 
-          lastUpdateId: lastKnownId,
-          universityId: universityId
-        }
-      });
-        // If backend returns 0, it means no new data available
-        if (response.data.updateAvailable === 0) {
-          console.log('Data is up to date, using cached data');
-          // Use stored data if available
-          if (storedData) {
-            const parsedData = JSON.parse(storedData);
-            setHealthInsurance(parsedData.healthInsurance);
-            setClinics(parsedData.clinics);
-          } else {
-            // Fallback to hardcoded data
-            setHealthInsurance(fallbackHealthInsurance);
-            setClinics(fallbackClinics);
-          }
+      (_, result) => {
+        if (result.rows.length > 0) {
+          const item = result.rows.item(0);
+
+          setHealthInsurance({
+          id: String(item.id),
+          insurance_name: item.insurance_name,
+          phone: item.phone,
+          emergency_contact: item.emergency_contact,
+          website: item.website,
+          address: item.address,
+          description: item.description,
+          cost: item.cost,
+        });
+
         } else {
-          console.log('New data available, updating...');
-          // Backend sent new data, update everything
-          const newData = response.data;
-          
-          // Update state
-          setHealthInsurance(newData.healthInsurance);
-          setClinics(newData.clinics);
-          
-          // Update AsyncStorage with new data and new ID
-          await AsyncStorage.setItem('healthData', JSON.stringify({
-            healthInsurance: newData.healthInsurance,
-            clinics: newData.clinics,
-            lastUpdateId: newData.currentUpdateId
-          }));
-        }
-
-      } catch (err) {
-        console.log('Error fetching data from backend:', err);
-        setError(err.message);
-        
-        // Fallback: Try to load from AsyncStorage
-        try {
-          const storedData = await AsyncStorage.getItem('healthData');
-          if (storedData) {
-            const parsedData = JSON.parse(storedData);
-            setHealthInsurance(parsedData.healthInsurance);
-            setClinics(parsedData.clinics);
-          } else {
-            // Final fallback to hardcoded data
-            setHealthInsurance(fallbackHealthInsurance);
-            setClinics(fallbackClinics);
-          }
-        } catch (storageErr) {
-          console.log('Storage error:', storageErr);
-          // Ultimate fallback to hardcoded data
           setHealthInsurance(fallbackHealthInsurance);
-          setClinics(fallbackClinics);
         }
-      } finally {
-        setLoading(false);
-      }
-    };
 
-    fetchData();
-  }, []);
+        setLoading(false);
+      },
+      (_, err) => {
+  console.log('health_insurance SELECT error:', err);
+  setHealthInsurance(fallbackHealthInsurance);
+  setError(err.message);
+  setLoading(false);
+  return false;
+}
+
+    );
+  });
+};
+
+ 
 
   if (loading) {
     return (
@@ -158,55 +134,96 @@ const Healthinsurance = () => {
     );
   }
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <TopNav title="Health Insurance & Clinics" />
-      
-      <ScrollView style={styles.content}>
-        {/* Health Insurance Section */}
-        <Text style={styles.sectionTitle}>Health Insurance</Text>
-        {healthInsurance && (
-          <View style={styles.insuranceCard}>
-            <Text style={styles.insuranceProvider}>{healthInsurance.provider}</Text>
-            <ContactButton label="Phone" value={healthInsurance.phone} type="phone" />
-            <ContactButton label="Email" value={healthInsurance.email} type="email" />
-            <ContactButton label="Website" value={healthInsurance.website} type="website" />
-            {healthInsurance.emergencyContact && (
-              <ContactButton label="24/7 Emergency" value={healthInsurance.emergencyContact} type="phone" />
-            )}
-            <Text style={styles.coverage}>{healthInsurance.coverage}</Text>
-          </View>
-        )}
+return (
+  <SafeAreaView style={styles.container}>
+    <TopNav title="Health Insurance" />
 
-        {/* Clinics Section */}
-        <Text style={styles.sectionTitle}>Nearby Clinics</Text>
-        {clinics.map((clinic) => (
-          <View key={clinic.id} style={[
-            styles.clinicCard,
-            clinic.isEmergency && styles.emergencyCard
-          ]}>
-            <View style={styles.clinicHeader}>
-              <Text style={styles.clinicName}>{clinic.name}</Text>
-              {clinic.isEmergency && (
-                <Text style={styles.emergencyBadge}>EMERGENCY</Text>
+    <ScrollView style={styles.content}>
+      {/* Health Insurance Section */}
+      <Text style={styles.sectionTitle}>University Health Insurance</Text>
+
+      {healthInsurance && (
+        <View style={styles.insuranceCard}>
+          <Text style={styles.insuranceProvider}>
+            {healthInsurance.insurance_name}
+          </Text>
+
+          {healthInsurance.phone && (
+            <ContactButton
+              label="Phone"
+              value={healthInsurance.phone}
+              type="phone"
+            />
+          )}
+
+          {healthInsurance.website && (
+            <ContactButton
+              label="Website"
+              value={healthInsurance.website}
+              type="url"
+            />
+          )}
+
+          {healthInsurance.address && (
+            <Text style={styles.insuranceInfo}>
+              {healthInsurance.address}
+            </Text>
+          )}
+
+          {healthInsurance.description && (
+            <Text style={styles.coverage}>
+              {healthInsurance.description}
+            </Text>
+          )}
+
+          {healthInsurance.cost !== null && (
+            <Text style={styles.coverage}>
+              Annual Cost: ${healthInsurance.cost}
+            </Text>
+          )}
+        </View>
+      )}
+
+      {/* Marketplace Insurance (Placeholder) */}
+      {clinics.length > 0 && (
+        <>
+          <Text style={styles.sectionTitle}>Marketplace Insurance</Text>
+
+          {clinics.map((clinic) => (
+            <View
+              key={clinic.id}
+              style={[
+                styles.clinicCard,
+                clinic.isEmergency && styles.emergencyCard,
+              ]}
+            >
+              <View style={styles.clinicHeader}>
+                <Text style={styles.clinicName}>{clinic.name}</Text>
+
+                {clinic.isEmergency && (
+                  <Text style={styles.emergencyBadge}>EMERGENCY</Text>
+                )}
+              </View>
+
+              {clinic.address && (
+                <Text style={styles.clinicInfo}>{clinic.address}</Text>
+              )}
+
+              {clinic.phone && (
+                <ContactButton
+                  label="Call"
+                  value={clinic.phone}
+                  type="phone"
+                />
               )}
             </View>
-            
-            <Text style={styles.clinicInfo}>{clinic.address}</Text>
-            <Text style={styles.clinicInfo}>{clinic.hours}</Text>
-            
-            <View style={styles.services}>
-              {clinic.services.map((service, index) => (
-                <Text key={index} style={styles.service}>• {service}</Text>
-              ))}
-            </View>
-            
-            <ContactButton label="Call" value={clinic.phone} type="phone" />
-          </View>
-        ))}
-      </ScrollView>
-    </SafeAreaView>
-  );
+          ))}
+        </>
+      )}
+    </ScrollView>
+  </SafeAreaView>
+);
+
 };
 
 const styles = StyleSheet.create({

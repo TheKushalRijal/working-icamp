@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,11 +6,13 @@ import {
   StyleSheet,
   TouchableOpacity,
   FlatList,
-  Image,
   TextInput,
   SafeAreaView,
   Dimensions,
-  Linking
+  Linking,
+  RefreshControl,
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import Feather from 'react-native-vector-icons/Feather';
@@ -19,15 +21,14 @@ import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import TopNav from '../../components/navigation/TopNav';
 import axios from 'axios';
 import { DEV_BASE_URL } from '@env';
+import { Platform } from 'react-native';
+
 const { width } = Dimensions.get('window');
-const GROUPS_ENDPOINT = `${DEV_BASE_URL}/api/groups/`;
-DEV_BASE_URL;
 
 interface GroupData {
   id: string;
   name: string;
   platform: string;
-  members?: string; // optional if backend doesn't send this yet
   description: string;
   link: string;
   icon: string;
@@ -35,297 +36,347 @@ interface GroupData {
   category?: string;
 }
 
-/* 1. Move hardcoded groups here
-const hardcodedGroups: GroupData[] = [
+interface Category {
+  id: string;
+  name: string;
+  icon: keyof typeof Ionicons.glyphMap;
+}
+
+const categories: Category[] = [
+  { id: 'all', name: 'All', icon: 'apps' },
+  { id: 'facebook', name: 'Facebook', icon: 'logo-facebook' },
+  { id: 'telegram', name: 'Telegram', icon: 'paper-plane' },
+  { id: 'whatsapp', name: 'WhatsApp', icon: 'logo-whatsapp' },
+  { id: 'discord', name: 'Discord', icon: 'chatbubbles' },
+];
+
+const fallbackGroups: GroupData[] = [
   {
-    id: 'f1',
-    name: 'Nepali community DFW',
+    id: '1',
+    name: 'Nepali Community DFW',
     platform: 'facebook',
-    description: 'Dallas, Fortworth, Arlington, Irving help Group',
+    description: 'Dallas, Fort Worth, Arlington, Irving help Group for Nepali community members',
     link: 'https://www.facebook.com/groups/800092676804143',
     icon: 'facebook',
-   
+    verified: true,
+  
   },
   {
-    id: 'f2',
-    name: 'Helpful Nepali Community Groups',
+    id: '2',
+    name: 'Nepali Help Network USA',
     platform: 'telegram',
-    description: 'Worldwide scam alerts in multiple languages',
-    link: 'https://www.facebook.com/groups/usnepalhelpnetwork',
+    description: 'Emergency help, resources and support for Nepali community across USA',
+    link: 'https://t.me/nepalihelpusa',
     icon: 'telegram',
-   
+    verified: true,
+  
   },
   {
-    id: 'f3',
+    id: '3',
     name: 'US-Nepal Help Network',
     platform: 'facebook',
-    description: 'Nepali Help Group All Over USA',
+    description: 'Connecting Nepali community members all over the United States',
     link: 'https://www.facebook.com/groups/usnepalhelpnetwork',
     icon: 'facebook',
-    
+   
   },
-  // Add more hardcoded groups as needed
+  {
+    id: '4',
+    name: 'Nepali Tech Community',
+    platform: 'discord',
+    description: 'Tech discussions, career advice and networking for Nepali professionals',
+    link: 'https://discord.gg/nepalitech',
+    icon: 'discord',
+    verified: true,
+  },
+  {
+    id: '5',
+    name: 'Nepali Students USA',
+    platform: 'whatsapp',
+    description: 'Student support group for Nepali students in American universities',
+    link: 'https://chat.whatsapp.com/invite/example',
+    icon: 'whatsapp',
+  },
 ];
-*/
-// Restore categories array
-const categories = [
-  { id: 'all', name: 'All Groups' },
-  { id: 'official', name: 'Official', icon: 'verified' },
-  { id: 'local', name: 'Local', icon: 'map-marker' },
-  { id: 'financial', name: 'Financial', icon: 'currency-usd' },
-  { id: 'technical', name: 'Technical', icon: 'shield-lock' },
-  { id: 'crypto', name: 'Crypto', icon: 'bitcoin' }
-];
+
+import SQLite from 'react-native-sqlite-storage';
+
+const db = SQLite.openDatabase(
+  { name: 'university.db', location: 'default' },
+  () => console.log('DB opened'),
+  error => console.log('DB open error', error)
+);
 
 const CommunityGroupsScreen = () => {
-  const [groups, setGroups] = useState<GroupData[]>([]);
+const [groups, setGroups] = useState<GroupData[]>([]);
   const [activeFilter, setActiveFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const hardcodedGroups: GroupData[] = [
-    {
-      id: 'f1',
-      name: 'Nepali community DFW',
-      platform: 'facebook',
-      description: 'Dallas, Fortworth, Arlington, Irving help Group',
-      link: 'https://www.facebook.com/groups/800092676804143',
-      icon: 'facebook',
-     
-    },
-    {
-      id: 'f2',
-      name: 'Helpful Nepali Community Groups',
-      platform: 'telegram',
-      description: 'Worldwide scam alerts in multiple languages',
-      link: 'https://www.facebook.com/groups/usnepalhelpnetwork',
-      icon: 'telegram',
-     
-    },
-    {
-      id: 'f3',
-      name: 'US-Nepal Help Network',
-      platform: 'facebook',
-      description: 'Nepali Help Group All Over USA',
-      link: 'https://www.facebook.com/groups/usnepalhelpnetwork',
-      icon: 'facebook',
-      
-    },
-    // Add more hardcoded groups if needed
-  ];
-  
   useEffect(() => {
-    const fetchGroups = async () => {
-      try {
-        console.log('Attempting to fetch groups from backend...');
-        const response = await axios.get(`${DEV_BASE_URL}/groups/`, {
-          timeout: 1000, // 1 second timeout
-        });
-  
-        if (response.data && Array.isArray(response.data)) {
-          setGroups(response.data);
-          console.log('Groups fetched successfully.');
-        } else {
-          console.warn('Invalid response format. Falling back to hardcoded groups.');
-          setGroups(hardcodedGroups);
-        }
-      } catch (error) {
-        console.error('Failed to fetch groups. Using fallback data.', error);
-        setGroups(hardcodedGroups);
-      }
-    };
-  
     fetchGroups();
   }, []);
-  
 
-  // 2. Combine hardcoded and fetched groups
-  const allGroups: GroupData[] = groups.length > 0 ? groups : hardcodedGroups;
+  const fetchGroups = (showLoading = true) => {
+    if (showLoading) setLoading(true);
 
-  // Filter out groups missing essential fields
-  const validGroups = allGroups.filter(
-    group => group && group.name && group.description
+db.transaction(tx => {
+  tx.executeSql(
+    `SELECT 
+      id,
+      name,
+      platform,
+      description,
+      link,
+      icon,
+      verified,
+      category,
+      members
+     FROM community_group`,
+    [],
+    (_, result) => {
+      const rows = result.rows;
+      const data: GroupData[] = [];
+
+      for (let i = 0; i < rows.length; i++) {
+        const item = rows.item(i);
+        data.push({
+          ...item,
+          id: String(item.id),
+          verified: Boolean(item.verified),
+        });
+      }
+
+      console.log('SQLite rows count:------------------------------------------>', data.length);
+
+      if (data.length > 0) {
+        setGroups(data);
+      } else {
+        setGroups(fallbackGroups);
+      }
+
+      setLoading(false);
+      setRefreshing(false);
+    },
+    (_, error) => {
+      // 🔴 THIS WAS MISSING
+      console.log('SQLite SELECT error:', error);
+
+      // fail gracefully
+      setGroups(fallbackGroups);
+      setLoading(false);
+      setRefreshing(false);
+
+      return false; // stop transaction propagation
+    }
   );
+});
 
-  // 3. Use validGroups for filtering and searching
-  const filteredGroups = validGroups.filter(group => {
-    const matchesCategory = activeFilter === 'all' || group.category === activeFilter;
-    const name = group.name || '';
-    const description = group.description || '';
-    const matchesSearch =
-      name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      description.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  };
 
-  const handleGroupPress = (link: string) => {
-    Linking.openURL(link).catch(err => {
-      console.error("Failed to open URL:", err);
-      // Using console.warn instead of alert for better error handling
-      console.warn("Couldn't open the group link. Please try again later.");
-    });
+  const onRefresh = useCallback(() => {
+    setRefreshing(true);
+    fetchGroups(false);
+  }, []);
+  const handleGroupPress = async (link: string) => {
+    try {
+      const canOpen = await Linking.canOpenURL(link);
+      if (canOpen) {
+        await Linking.openURL(link);
+      } else {
+        Alert.alert('Error', 'Cannot open this link');
+      }
+    } catch (error) {
+      Alert.alert('Error', 'Failed to open group link');
+    }
   };
 
   const getPlatformIcon = (platform: string) => {
-    switch (platform) {
-      case 'facebook': return <Feather name="facebook" size={20} color="#1877F2" />;
-      case 'whatsapp': return <Feather name="whatsapp" size={20} color="#25D366" />;
-      case 'telegram': return <Feather name="send" size={20} color="#0088CC" />;
-      case 'instagram': return <Feather name="instagram" size={20} color="#E4405F" />;
-      case 'discord': return <MaterialCommunityIcons name="discord" size={20} color="#5865F2" />;
-      default: return <Feather name="users" size={20} color="#3498db" />;
-    }
+    const iconMap: { [key: string]: JSX.Element } = {
+      facebook: <Ionicons name="logo-facebook" size={22} color="#1877F2" />,
+      whatsapp: <Ionicons name="logo-whatsapp" size={22} color="#25D366" />,
+      telegram: <MaterialCommunityIcons name="telegram" size={22} color="#0088CC" />,
+      discord: <MaterialCommunityIcons name="discord" size={22} color="#5865F2" />,
+      instagram: <Ionicons name="logo-instagram" size={22} color="#E4405F" />,
+    };
+    return iconMap[platform] || <Ionicons name="people" size={22} color="#7F8C8D" />;
   };
 
   const getPlatformColor = (platform: string) => {
-    switch (platform) {
-      case 'facebook': return '#1877F2';
-      case 'whatsapp': return '#25D366';
-      case 'telegram': return '#0088CC';
-      case 'instagram': return '#E4405F';
-      case 'discord': return '#5865F2';
-      default: return '#3498db';
-    }
+    const colorMap: { [key: string]: string } = {
+      facebook: '#1877F2',
+      whatsapp: '#25D366',
+      telegram: '#0088CC',
+      discord: '#5865F2',
+      instagram: '#E4405F',
+    };
+    return colorMap[platform] || '#7F8C8D';
   };
+
+  const filteredGroups = groups.filter(group => {
+    if (activeFilter !== 'all' && group.platform !== activeFilter) return false;
+    if (!searchQuery) return true;
+    
+    const query = searchQuery.toLowerCase();
+    return (
+      group.name.toLowerCase().includes(query) ||
+      group.description.toLowerCase().includes(query)
+    );
+  });
 
   const renderGroupItem = ({ item }: { item: GroupData }) => (
     <TouchableOpacity
       style={styles.groupCard}
       onPress={() => handleGroupPress(item.link)}
-      activeOpacity={0.8}
+      activeOpacity={0.7}
     >
       <View style={styles.groupHeader}>
         <View style={[
           styles.platformIconContainer,
-          { backgroundColor: `${getPlatformColor(item.platform)}10` }
+          { backgroundColor: `${getPlatformColor(item.platform)}15` }
         ]}>
           {getPlatformIcon(item.platform)}
         </View>
+        
         <View style={styles.groupInfo}>
           <View style={styles.groupTitleRow}>
-            <Text style={styles.groupName} numberOfLines={1}>{item.name}</Text>
+            <Text style={styles.groupName} numberOfLines={1}>
+              {item.name}
+            </Text>
             {item.verified && (
               <MaterialIcons 
                 name="verified" 
                 size={16} 
                 color={getPlatformColor(item.platform)} 
-                style={styles.verifiedIcon} 
               />
             )}
           </View>
+          
           <View style={styles.groupMeta}>
             <Text style={styles.groupPlatform}>
-              {(item.platform || '').charAt(0).toUpperCase() + (item.platform || '').slice(1)}
+              {item.platform.charAt(0).toUpperCase() + item.platform.slice(1)}
             </Text>
+            <View style={styles.separator} />
             <View style={styles.memberCount}>
-              <Ionicons name="people" size={12} color="#7f8c8d" />
-              <Text style={styles.memberCountText}>{item.members}</Text>
+              <Ionicons name="people-outline" size={14} color="#7F8C8D" />
+              
             </View>
           </View>
         </View>
       </View>
 
-      <Text style={styles.groupDescription}>{item.description}</Text>
+      <Text style={styles.groupDescription} numberOfLines={2}>
+        {item.description}
+      </Text>
 
       <View style={styles.groupFooter}>
-        <TouchableOpacity 
-          style={[
-            styles.joinButton,
-            { backgroundColor: getPlatformColor(item.platform) }
-          ]}
+        <TouchableOpacity
+          style={[styles.joinButton, { backgroundColor: getPlatformColor(item.platform) }]}
           onPress={() => handleGroupPress(item.link)}
         >
           <Text style={styles.joinButtonText}>Join Group</Text>
-          <Feather name="arrow-up-right" size={14} color="white" />
+          <Feather name="external-link" size={14} color="white" style={styles.joinIcon} />
         </TouchableOpacity>
       </View>
     </TouchableOpacity>
   );
 
+  const renderCategoryFilter = () => (
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.filterContainer}
+    >
+      {categories.map(category => (
+        <TouchableOpacity
+          key={category.id}
+          style={[
+            styles.filterButton,
+            activeFilter === category.id && styles.activeFilterButton
+          ]}
+          onPress={() => setActiveFilter(category.id)}
+        >
+          <Ionicons
+            name={category.icon}
+            size={16}
+            color={activeFilter === category.id ? '#FFFFFF' : getPlatformColor(category.id)}
+            style={styles.filterIcon}
+          />
+          <Text style={[
+            styles.filterText,
+            activeFilter === category.id && styles.activeFilterText
+          ]}>
+            {category.name}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </ScrollView>
+  );
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      <TopNav title="Community Groups" />
-      <ScrollView 
+      <TopNav title=" Groups" />
+      
+      <ScrollView
         style={styles.container}
-        stickyHeaderIndices={[1]} // Makes the filter bar sticky
-      >
-        {/* Header */}
-        
-
-        {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search" size={18} color="#95a5a6" style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search groups..."
-            placeholderTextColor="#95a5a6"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#3498db']}
+            tintColor="#3498db"
           />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')}>
-              <Ionicons name="close-circle" size={18} color="#95a5a6" />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Featured Groups */}
-        {activeFilter === 'all' && searchQuery.length === 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Most Popular Groups</Text>
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.featuredContainer}
-            >
-              {hardcodedGroups.map(group => (
-                <TouchableOpacity
-                  key={group.id}
-                  style={[
-                    styles.featuredCard,
-                    { borderColor: getPlatformColor(group.platform) }
-                  ]}
-                  onPress={() => handleGroupPress(group.link)}
-                >
-                  <View style={styles.featuredHeader}>
-                    
-                    
-                  </View>
-                  <Text style={styles.featuredName} numberOfLines={2}>{group.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-
-        {/* Category Filters */}
+        }
+      >
+        {/* Search Section */}
        
 
-        {/* All Groups */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>
-            {activeFilter === 'all' ? 'All Communities' : `${categories.find(c => c.id === activeFilter)?.name || 'Unknown'} Communities`}
-            <Text style={styles.groupCount}>  ({filteredGroups.length})</Text>
-          </Text>
-          
-          {filteredGroups.length > 0 ? (
-            <FlatList
-              data={filteredGroups}
-              renderItem={renderGroupItem}
-              keyExtractor={item => item.id}
-              scrollEnabled={false}
-              contentContainerStyle={styles.groupsList}
-            />
-          ) : (
-            <View style={styles.emptyState}>
-              <Feather name="search" size={40} color="#bdc3c7" />
-              <Text style={styles.emptyText}>No groups found</Text>
-              <Text style={styles.emptySubtext}>Try a different search or filter</Text>
-            </View>
-          )}
-        </View>
+        {/* Category Filters */}
+        {renderCategoryFilter()}
 
-        {/* Safety Notice */}
-        
+        {/* Loading State */}
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#3498db" />
+            <Text style={styles.loadingText}>Loading groups...</Text>
+          </View>
+        ) : (
+          <>
+            {/* Groups Count */}
+            <View style={styles.headerRow}>
+              <Text style={styles.sectionTitle}>
+                {activeFilter === 'all' ? 'All Groups' : 
+                 `${categories.find(c => c.id === activeFilter)?.name} Groups`}
+              </Text>
+              <Text style={styles.groupCount}>
+                {filteredGroups.length} {filteredGroups.length === 1 ? 'group' : 'groups'}
+              </Text>
+            </View>
+
+            {/* Groups List */}
+            {filteredGroups.length > 0 ? (
+              <FlatList
+                data={filteredGroups}
+                renderItem={renderGroupItem}
+                keyExtractor={item => item.id}
+                scrollEnabled={false}
+                contentContainerStyle={styles.groupsList}
+              />
+            ) : (
+              <View style={styles.emptyState}>
+                <Feather name="users" size={60} color="#BDC3C7" />
+                <Text style={styles.emptyTitle}>No groups found</Text>
+                <Text style={styles.emptySubtitle}>
+                  {searchQuery ? 'Try a different search term' : 'No groups available in this category'}
+                </Text>
+              </View>
+            )}
+
+            {/* Safety Tip */}
+            
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -334,170 +385,133 @@ const CommunityGroupsScreen = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#F7F9FC',
+    backgroundColor: '#F8F9FA',
   },
   container: {
     flex: 1,
     paddingHorizontal: 16,
   },
-  header: {
-    paddingVertical: 20,
-    paddingBottom: 16,
-  },
-  title: {
-    fontFamily: 'Poppins-SemiBold',
-    fontSize: 26,
-    color: '#2c3e50',
-    marginBottom: 4,
-  },
-  subtitle: {
-    fontFamily: 'Roboto-Regular',
-    fontSize: 15,
-    color: '#7f8c8d',
-    lineHeight: 22,
-  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    elevation: 2,
+    marginBottom: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   searchIcon: {
-    marginRight: 10,
+    marginRight: 12,
   },
   searchInput: {
     flex: 1,
-    fontFamily: 'Roboto-Regular',
-    fontSize: 15,
-    color: '#2c3e50',
-    padding: 0,
-    margin: 0,
-  },
-  section: {
-    marginBottom: 24,
-  },
-  sectionTitle: {
-    fontFamily: 'Roboto-Medium',
-    fontSize: 18,
-    color: '#2c3e50',
-    marginBottom: 16,
-  },
-  groupCount: {
-    fontFamily: 'Roboto-Regular',
-    color: '#7f8c8d',
-  },
-  featuredContainer: {
-    paddingBottom: 8,
-  },
-  featuredCard: {
-    width: width * 0.65,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
-    marginRight: 12,
-    borderWidth: 1,
-    borderColor: '#ecf0f1',
-  },
-  featuredHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  featuredIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  featuredVerifiedBadge: {
-    backgroundColor: '#3498db',
-    width: 18,
-    height: 18,
-    borderRadius: 9,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  featuredName: {
-    fontFamily: 'Roboto-Medium',
     fontSize: 16,
-    color: '#2c3e50',
-    marginBottom: 8,
-    height: 44,
-  },
-  featuredMembers: {
-    fontFamily: 'Roboto-Regular',
-    fontSize: 12,
-    color: '#7f8c8d',
+    color: '#2C3E50',
+    fontFamily: 'System',
   },
   filterContainer: {
-    marginVertical: 12,
-    paddingVertical: 4,
-  },
-  filterScroll: {
-    paddingHorizontal: 4,
+    paddingVertical: 8,
+    paddingRight: 16,
   },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
     borderRadius: 20,
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 8,
+    paddingVertical: 10,
+    marginRight: 10,
     borderWidth: 1,
-    borderColor: '#ecf0f1',
+    borderColor: '#E8ECF0',
   },
-  activeFilter: {
-    backgroundColor: '#3498db',
-    borderColor: '#3498db',
+  activeFilterButton: {
+    backgroundColor: '#3498DB',
+    borderColor: '#3498DB',
   },
   filterIcon: {
     marginRight: 6,
   },
   filterText: {
-    fontFamily: 'Roboto-Medium',
     fontSize: 14,
-    color: '#3498db',
+    fontFamily: 'System',
+    fontWeight: '500',
+    color: '#2C3E50',
   },
   activeFilterText: {
-    color: 'white',
+    color: '#FFFFFF',
+  },
+  loadingContainer: {
+    padding: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 12,
+    fontSize: 16,
+    color: '#7F8C8D',
+    fontFamily: 'System',
+  },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontFamily: 'System',
+    fontWeight: '700',
+    color: '#2C3E50',
+  },
+  groupCount: {
+    fontSize: 14,
+    fontFamily: 'System',
+    color: '#7F8C8D',
   },
   groupsList: {
-    paddingBottom: 8,
+    paddingBottom: 20,
   },
   groupCard: {
-    backgroundColor: 'white',
-    borderRadius: 12,
-    padding: 16,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
     marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   groupHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   platformIconContainer: {
-    width: 44,
-    height: 44,
+    width: 48,
+    height: 48,
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 16,
   },
   groupInfo: {
     flex: 1,
@@ -505,44 +519,48 @@ const styles = StyleSheet.create({
   groupTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 2,
+    marginBottom: 6,
   },
   groupName: {
-    fontFamily: 'Roboto-Medium',
-    fontSize: 16,
-    color: '#2c3e50',
+    fontSize: 17,
+    fontFamily: 'System',
+    fontWeight: '600',
+    color: '#2C3E50',
+    flex: 1,
     marginRight: 6,
-    flexShrink: 1,
-  },
-  verifiedIcon: {
-    marginLeft: 2,
   },
   groupMeta: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   groupPlatform: {
-    fontFamily: 'Roboto-Regular',
-    fontSize: 12,
-    color: '#7f8c8d',
-    marginRight: 12,
+    fontSize: 13,
+    fontFamily: 'System',
+    color: '#7F8C8D',
+    textTransform: 'capitalize',
+  },
+  separator: {
+    width: 1,
+    height: 12,
+    backgroundColor: '#E0E0E0',
+    marginHorizontal: 8,
   },
   memberCount: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   memberCountText: {
-    fontFamily: 'Roboto-Regular',
-    fontSize: 12,
-    color: '#7f8c8d',
+    fontSize: 13,
+    fontFamily: 'System',
+    color: '#7F8C8D',
     marginLeft: 4,
   },
   groupDescription: {
-    fontFamily: 'Roboto-Regular',
-    fontSize: 14,
-    color: '#34495e',
-    marginBottom: 16,
-    lineHeight: 20,
+    fontSize: 15,
+    fontFamily: 'System',
+    color: '#5D6D7E',
+    lineHeight: 22,
+    marginBottom: 20,
   },
   groupFooter: {
     flexDirection: 'row',
@@ -551,57 +569,67 @@ const styles = StyleSheet.create({
   joinButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 10,
   },
   joinButtonText: {
-    fontFamily: 'Roboto-Medium',
-    fontSize: 14,
-    color: 'white',
+    fontSize: 15,
+    fontFamily: 'System',
+    fontWeight: '600',
+    color: '#FFFFFF',
     marginRight: 6,
   },
+  joinIcon: {
+    marginTop: 1,
+  },
   emptyState: {
-    backgroundColor: 'white',
-    borderRadius: 12,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     padding: 40,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 20,
   },
-  emptyText: {
-    fontFamily: 'Roboto-Medium',
-    fontSize: 16,
-    color: '#2c3e50',
+  emptyTitle: {
+    fontSize: 18,
+    fontFamily: 'System',
+    fontWeight: '600',
+    color: '#2C3E50',
     marginTop: 16,
+    marginBottom: 8,
   },
-  emptySubtext: {
-    fontFamily: 'Roboto-Regular',
-    fontSize: 14,
-    color: '#7f8c8d',
-    marginTop: 4,
+  emptySubtitle: {
+    fontSize: 15,
+    fontFamily: 'System',
+    color: '#7F8C8D',
+    textAlign: 'center',
   },
-  safetyNotice: {
+  safetyTip: {
     flexDirection: 'row',
-    backgroundColor: '#e3f2fd',
-    borderRadius: 12,
+    backgroundColor: '#E8F8F5',
+    borderRadius: 16,
     padding: 16,
-    marginBottom: 24,
+    marginTop: 8,
+    marginBottom: 30,
+    alignItems: 'flex-start',
   },
-  noticeTextContainer: {
+  safetyTextContainer: {
     flex: 1,
     marginLeft: 12,
   },
-  safetyNoticeTitle: {
-    fontFamily: 'Roboto-Medium',
-    fontSize: 14,
-    color: '#3498db',
+  safetyTitle: {
+    fontSize: 15,
+    fontFamily: 'System',
+    fontWeight: '600',
+    color: '#27AE60',
     marginBottom: 4,
   },
-  safetyNoticeText: {
-    fontFamily: 'Roboto-Regular',
-    fontSize: 13,
-    color: '#3498db',
-    lineHeight: 18,
+  safetyDescription: {
+    fontSize: 14,
+    fontFamily: 'System',
+    color: '#27AE60',
+    lineHeight: 20,
   },
 });
 

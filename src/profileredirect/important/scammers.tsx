@@ -150,11 +150,7 @@ const ScamShieldApp = () => {
         />
 
         {/* Informational Banner */}
-        <View style={styles.banner}>
-          <Text style={styles.bannerText}>
-            Help Protect other students from getting scammed.
-          </Text>
-        </View>
+        
 
         <Animated.ScrollView
           style={{ flex: 1 }}

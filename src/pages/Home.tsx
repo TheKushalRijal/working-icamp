@@ -184,7 +184,7 @@ console.log(
       {events.length > 0 ? (
         <>
           <Text style={styles.sectionTitle}>
-            {activeTab === 'your-community' ? 'Your Events' : 'Campus Events'}
+            {activeTab === 'your-community' ? 'Blogs and Articles' : 'Campus Events'}
           </Text>
 
           <FlatList

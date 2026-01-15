@@ -279,7 +279,7 @@ const ProfilePage = () => {
                   style={styles.actionButton}
                   onPress={() => navigation.navigate('Docs')}
                 >
-                  <MaterialIcon name="message" size={20} color="#4F46E5" />
+                  <MaterialIcon name="description" size={30} color="#4F46E5" />
                   <Text style={styles.actionText}>Documents</Text>
                 </TouchableOpacity>
 
@@ -495,9 +495,8 @@ actionButton: {
 
 actionText: {
   color: '#4338CA', // deeper purple for contrast
-  fontSize: 12,
+  fontSize: 15,
   fontWeight: '600',
-  marginTop: 10,
   letterSpacing: 0.3,
 },
 

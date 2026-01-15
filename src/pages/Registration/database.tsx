@@ -47,7 +47,20 @@ export const saveUniversityDataToSQLite = async (data: UniversityData) => {
   try {
     const db = await initDB();
     console.log("Database instance:");
-    await db.transaction(async (tx) => {
+
+
+   
+
+
+    db.transaction(
+async (tx) => {
+       await tx.executeSql(`
+        CREATE TABLE IF NOT EXISTS sync_meta (
+          key TEXT PRIMARY KEY,
+          last_updated TEXT
+        );
+      `);
+
       // Create and populate housing table
       await tx.executeSql(
         `CREATE TABLE IF NOT EXISTS housing (
@@ -70,6 +83,13 @@ export const saveUniversityDataToSQLite = async (data: UniversityData) => {
           );
         }
       }
+if (data.housing?.length) {
+  await tx.executeSql(
+    `INSERT OR REPLACE INTO sync_meta (key, last_updated)
+     VALUES (?, ?)`,
+    ['housing', new Date().toISOString()]
+  );
+}
 
       // Save restaurant data - consolidated into single transaction
       await tx.executeSql(
@@ -112,6 +132,13 @@ export const saveUniversityDataToSQLite = async (data: UniversityData) => {
           );
         }
       }
+if (data.restaurants?.length) {
+  await tx.executeSql(
+    `INSERT OR REPLACE INTO sync_meta (key, last_updated)
+     VALUES (?, ?)`,
+['restaurant', new Date().toISOString()]
+  );
+}
 
       // Save video data
       await tx.executeSql(
@@ -137,6 +164,15 @@ export const saveUniversityDataToSQLite = async (data: UniversityData) => {
         }
       }
 
+
+      if (data.videos?.length) {
+  await tx.executeSql(
+    `INSERT OR REPLACE INTO sync_meta (key, last_updated)
+     VALUES (?, ?)`,
+    ['video', new Date().toISOString()]
+  );
+}
+
       // Save post data
       await tx.executeSql(
         `CREATE TABLE IF NOT EXISTS post (
@@ -160,6 +196,13 @@ export const saveUniversityDataToSQLite = async (data: UniversityData) => {
           );
         }
       }
+if (data.posts?.length) {
+  await tx.executeSql(
+    `INSERT OR REPLACE INTO sync_meta (key, last_updated)
+     VALUES (?, ?)`,
+    ['post', new Date().toISOString()]
+  );
+}
 
       // Save announcement data (create table if needed)
       await tx.executeSql(
@@ -179,6 +222,13 @@ export const saveUniversityDataToSQLite = async (data: UniversityData) => {
           );
         }
       }
+if (data.announcements?.length) {
+  await tx.executeSql(
+    `INSERT OR REPLACE INTO sync_meta (key, last_updated)
+     VALUES (?, ?)`,
+    ['announcement', new Date().toISOString()]
+  );
+}
 
       // Save resources data
       await tx.executeSql(
@@ -207,6 +257,14 @@ export const saveUniversityDataToSQLite = async (data: UniversityData) => {
           );
         }
       }
+      if (data.resources?.length) {
+  await tx.executeSql(
+    `INSERT OR REPLACE INTO sync_meta (key, last_updated)
+     VALUES (?, ?)`,
+['resource', new Date().toISOString()]
+  );
+}
+
 
 
 await tx.executeSql(
@@ -235,6 +293,13 @@ if (data.scam_groups?.length) {
       ]
     );
   }
+}
+if (data.scam_groups?.length) {
+  await tx.executeSql(
+    `INSERT OR REPLACE INTO sync_meta (key, last_updated)
+     VALUES (?, ?)`,
+['scam_watch_group', new Date().toISOString()]
+  );
 }
 
 
@@ -277,44 +342,73 @@ if (data.community_groups?.length) {
   }
 }
 
+if (data.community_groups?.length) {
+  await tx.executeSql(
+    `INSERT OR REPLACE INTO sync_meta (key, last_updated)
+     VALUES (?, ?)`,
+    ['community_group', new Date().toISOString()]
+  );
+}
 
 
 
 
 
 
-await tx.executeSql(
-  `CREATE TABLE IF NOT EXISTS health_insurance (
-    id INTEGER PRIMARY KEY,
-    universityid TEXT,
-    insurancename TEXT,
+await tx.executeSql(`
+  CREATE TABLE IF NOT EXISTS health_insurance (
+    id INTEGER PRIMARY KEY NOT NULL,
+    university_id TEXT NOT NULL,
+    insurance_name TEXT NOT NULL,
+    phone TEXT,
+    emergency_contact TEXT,
+    website TEXT,
     address TEXT,
-    phonenumber TEXT,
-    hours TEXT,
-    services TEXT,
-    description TEXT
-  );`
-);
+    description TEXT,
+    cost REAL
+  );
+`);
+
+
 if (data.health_insurance?.length) {
   for (const insurance of data.health_insurance) {
     await tx.executeSql(
       `INSERT OR REPLACE INTO health_insurance
-       (id, universityid, insurancename, address, phonenumber, hours, services, description)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+       (
+         id,
+         university_id,
+         insurance_name,
+         phone,
+         emergency_contact,
+         website,
+         address,
+         description,
+         cost
+       )
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         insurance.id,
-        insurance.universityid,
-        insurance.insurancename,
+        insurance.university_id,
+        insurance.insurance_name,
+        insurance.phone,
+        insurance.emergency_contact,
+        insurance.website,
         insurance.address,
-        insurance.phonenumber,
-        insurance.hours,
-        insurance.services,
         insurance.description,
+        insurance.cost,
       ]
     );
   }
 }
 
+
+if (data.health_insurance?.length) {
+  await tx.executeSql(
+    `INSERT OR REPLACE INTO sync_meta (key, last_updated)
+     VALUES (?, ?)`,
+    ['health_insurance', new Date().toISOString()]
+  );
+}
 
 
 /*

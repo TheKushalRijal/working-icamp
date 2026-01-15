@@ -39,7 +39,7 @@ import NameDescriptionList from './src/profileredirect/important/scammers';
 import splitmain from './src/split/splitmain';
 
 import DocumentHubScreen from './src/Documentlogic/DocumentHubScreen';
-
+import Healthinsurance from './src/profileredirect/important/Insurance';
 
 function AppNavigator() {
   return (
@@ -54,6 +54,9 @@ function AppNavigator() {
       <Stack.Screen name="Docs" component={DocumentHubScreen} />
 
       <Stack.Screen name="Rides" component={RidersApp} />
+
+      <Stack.Screen name="insurance" component={Healthinsurance} />
+
 
       {/* Screens outside BottomNav (like auth & onboarding) */}
       <Stack.Screen name="Landing" component={LandingRedirect} />
