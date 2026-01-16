@@ -40,6 +40,8 @@ import splitmain from './src/split/splitmain';
 
 import DocumentHubScreen from './src/Documentlogic/DocumentHubScreen';
 import Healthinsurance from './src/profileredirect/important/Insurance';
+import TermsAndPrivacy from './src/profileredirect/important/termsandcondition';
+
 
 function AppNavigator() {
   return (
@@ -77,6 +79,7 @@ function AppNavigator() {
 
 
       <Stack.Screen name="Discounts" component={DiscountApp} />
+      <Stack.Screen name="terms" component={TermsAndPrivacy} />
 
     </Stack.Navigator>
   );

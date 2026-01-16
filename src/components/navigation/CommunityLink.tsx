@@ -124,32 +124,52 @@ const clearAsyncStorage = async (): Promise<void> => {
 const styles = StyleSheet.create({
   wrapper: {
     width: '100%',
-    backgroundColor: '#11182e', // Dark background to match header
+    backgroundColor: '#11182e',
   },
+
   container: {
     flexGrow: 0,
   },
+
   contentContainer: {
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 5,
   },
+
   linkButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)', // Semi-transparent white
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
+
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 18,
     marginRight: 10,
+
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
   },
+
   icon: {
     marginRight: 6,
   },
+
   linkText: {
-    color: '#fff',
-    fontSize: 14,
+    color: '#e5e7eb',
+    fontSize: 13,
     fontWeight: '600',
   },
+
+  /* Logout */
+  dangerButton: {
+    backgroundColor: 'rgba(220,38,38,0.15)',
+    borderColor: 'rgba(220,38,38,0.35)',
+  },
+
+  dangerText: {
+    color: '#fca5a5',
+  },
 });
+
 
 export default CommunityLinks;

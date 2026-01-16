@@ -11,11 +11,15 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import UniversitySelector from './selectuniversity';
+interface BackendError {
+  errors?: string[];
+  message?: string;
+}
 
 
 //import { DEV_BASE_URL } from '@env';
@@ -43,11 +47,11 @@ const Register: React.FC = () => {
   const navigation = useNavigation<NavigationProp>();
 
   const [formData, setFormData] = useState<FormData>({
-    fullName: '',
-    email: '',
-    password: '',
+    fullName: 'as',
+    email: 'as@gmail.com',
+    password: '111111',
     university: '',
-    confirmPassword: '',
+    confirmPassword: '111111',
   });
 
   const [errors, setErrors] = useState<string[]>([]);
@@ -99,40 +103,70 @@ useEffect(() => {
     if (formData.password !== formData.confirmPassword) newErrors.push('Passwords must match');
     return newErrors;
   };
+interface RegisterResponse {
+  message?: string;
+  error?: string;
+}
 
-  const handleSubmit = async () => {
-    setIsLoading(true);
-    setErrors([]);
+const handleSubmit = async (): Promise<void> => {
+  setErrors([]);
+  setIsLoading(true);
 
-    const newErrors = validateForm();
-    if (newErrors.length > 0) {
-      setErrors(newErrors);
-      setIsLoading(false);
+  // client-side validation
+  const validationErrors = validateForm();
+  if (validationErrors.length > 0) {
+    setErrors(validationErrors);
+    setIsLoading(false);
+    return;
+  }
+
+  try {
+    const response = await axios.post<RegisterResponse>(
+      `${DEV_BASE_URL}/register_user/`,
+      formData,
+      {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 5000,
+      }
+    );
+
+    // backend success → move to verification
+    if (response.data.message) {
+      setVerificationStep(true);
       return;
     }
 
-    try {
-      const response = await axios.post(
-        `${DEV_BASE_URL}/register_user/`,
-        formData,
-        {
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-          console.log("this is the from data with university sent to backend",formData)
-      if (response.status === 200) {
-        // Store full name if needed in AsyncStorage or context, here just local state
-        setVerificationStep(true);
-      } else {
-        setErrors(['Something went wrong. Please try again.']);
-      }
-    } catch (error) {
-      console.error(error);
-      setErrors(['Server error. Please try again later.']);
-    } finally {
-      setIsLoading(false);
+    // defensive (should not happen)
+    setErrors(['Unexpected server response.']);
+
+  } catch (err: unknown) {
+    if (!axios.isAxiosError(err)) {
+      setErrors(['Unexpected error occurred.']);
+      return;
     }
-  };
+
+    // backend not reachable / timeout
+    if (!err.response) {
+      setErrors(['Unable to connect to server. Please try again later.']);
+      return;
+    }
+
+    const data = err.response.data as RegisterResponse | undefined;
+
+    // backend validation error
+    if (data?.error) {
+      setErrors([data.error]);
+      return;
+    }
+
+    setErrors(['Registration failed.']);
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+
+
 
   const handleVerificationChange = (text: string, index: number) => {  // Only allow numeric input for otp
     if (/^\d*$/.test(text)) {
@@ -194,7 +228,7 @@ useEffect(() => {
         Alert.alert('Success', 'Verification successful! You can now login.', [
           {
             text: 'OK',
-            onPress: () => navigation.navigate('Login' as never),
+            onPress: () => navigation.navigate('Main' as never),
           },
         ]);
       } else {
@@ -398,16 +432,18 @@ useEffect(() => {
             </View>
           </View>
 
-         <View style={styles.footer}>
+<View style={styles.footer}>
   <Text style={styles.footerText}>
     By continuing, you agree to our{' '}
-    <Text
-      style={styles.link}
-      onPress={() => navigation.navigate("terms")}
-    >
-      Terms & Privacy Policy
-    </Text>
   </Text>
+
+  <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+    <TouchableOpacity onPress={() => navigation.navigate('terms')}>
+      <Text style={styles.link}>Terms and Policy</Text>
+    </TouchableOpacity>
+
+
+  </View>
 </View>
 
         </View>

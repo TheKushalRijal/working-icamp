@@ -17,25 +17,23 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import FontAwesome from 'react-native-vector-icons/FontAwesome';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 import TopNav from '../../components/navigation/TopNav';
-
+import { useEffect } from 'react';
+import { ActivityIndicator } from 'react-native';
+import axios from 'axios';
 const { width } = Dimensions.get('window');
+const AnimatedFlatList = Animated.createAnimatedComponent(FlatList);
 
 interface ScamData {
-  id: string;
+  id: number;
   name: string;
   description: string;
-  status: 'review' | 'confirmed' | 'low';
-  avatar: string | null;
-  type: string;
-  lastReported: string;
   reports: number;
 }
 
 interface ReportForm {
   name: string;
   description: string;
-  tags: string[];
-  image: string | null;
+  phonenumber:string;
 }
 
 // Single default data entry that will be used for all scam reports
@@ -43,20 +41,19 @@ const DEFAULT_SCAM_DATA = {
   id: 'default',
   name: 'Reported Scam',
   description: 'This is a reported scam. Click to view details and report.',
-  status: 'review',
-  avatar: null,
-  type: 'general',
-  lastReported: 'Just now',
   reports: 1
 };
 
 const ScamShieldApp = () => {
+  const [scammerProfiles, setScammerProfiles] = useState<ScamData[]>([]);
+const [loading, setLoading] = useState(true);
+const [error, setError] = useState<string | null>(null);
+
   const [showReportModal, setShowReportModal] = useState(false);
   const [reportForm, setReportForm] = useState<ReportForm>({
     name: '',
     description: '',
-    tags: [],
-    image: null,
+   phonenumber:'',
   });
   const [selectedProfile, setSelectedProfile] = useState<ScamData | null>(null);
   
@@ -69,21 +66,59 @@ const ScamShieldApp = () => {
   });
   
   // Use the default data for all entries
-  const scammerProfiles: ScamData[] = Array(6).fill(DEFAULT_SCAM_DATA).map((item, index) => ({
-    ...item,
-    id: `default-${index + 1}` // Give each entry a unique ID
-  }));
+useEffect(() => {
+  fetchScamProfiles();
+}, []);
+
+
+
+
+
+
+
+const DEV_BASE_URL = 'http://10.0.2.2:8000';
+
+
+
+const fetchScamProfiles = async () => {
+  try {
+    setLoading(true);
+    setError(null);
+
+    const response = await axios.get(
+  `${DEV_BASE_URL}/scam/`,
+  { timeout: 5000 }
+);
+console.log("this is the scam data response",response.data)
+
+
+setScammerProfiles(
+  response.data.cases.map((item: any) => ({
+    id: item.id,
+    name: item.name,
+    description: item.description,
+    reports: item.repoted, // map typo safely
+  }))
+);
+
+} catch (err) {
+    console.error(err);
+    setError('Unable to load scam reports');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleReportSubmit = () => {
     // Handle form submission
     console.log('Report submitted:', reportForm);
     setShowReportModal(false);
     setReportForm({
-      name: '',
-      description: '',
-      tags: [],
-      image: null,
-    });
+        name: '',
+        description: '',
+        phonenumber: '',
+      });
+
   };
 
   const renderProfileItem = ({ item }: { item: ScamData }) => (
@@ -92,14 +127,7 @@ const ScamShieldApp = () => {
       onPress={() => setSelectedProfile(item)}
       activeOpacity={0.7}
     >
-      <View style={[
-        styles.avatarContainer,
-        item.status === 'confirmed' && styles.confirmedBorder,
-        item.status === 'review' && styles.reviewBorder,
-        item.status === 'low' && styles.lowBorder,
-      ]}>
-        <MaterialIcons name="account-circle" size={40} color="#95a5a6" />
-      </View>
+     
     </TouchableOpacity>
   );
 
@@ -117,7 +145,7 @@ const ScamShieldApp = () => {
           <Text style={styles.cardReports}>{item.reports} report</Text>
         </View>
         <View style={styles.cardFlag}>
-          {item.status === 'confirmed' && (
+          { (
             <FontAwesome name="flag" size={16} color="#e74c3c" />
           )}
         </View>
@@ -129,7 +157,9 @@ const ScamShieldApp = () => {
     </TouchableOpacity>
   );
 
+
   return (
+    
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         {/* Top Navigation Bar */}
@@ -151,42 +181,26 @@ const ScamShieldApp = () => {
 
         {/* Informational Banner */}
         
+<AnimatedFlatList
+  data={scammerProfiles}
+  renderItem={renderScammerCard}
+  keyExtractor={(item) => item.id.toString()}
+  numColumns={2}
+  columnWrapperStyle={styles.cardRow}
+  contentContainerStyle={styles.listContent}
+  showsVerticalScrollIndicator={false}
+  ListHeaderComponent={
+    <Text style={styles.sectionTitle}>Avoid These Situations</Text>
+  }
+  ListEmptyComponent={
+    <Text style={styles.emptyText}>
+      No scam reports available at the moment.
+    </Text>
+  }
+/>
 
-        <Animated.ScrollView
-          style={{ flex: 1 }}
-          contentContainerStyle={{ padding: 16 }}
-          scrollEventThrottle={16}
-          onScroll={Animated.event(
-            [{ nativeEvent: { contentOffset: { y: scrollY } }}],
-            { useNativeDriver: true }
-          )}
-        >
-          <View style={{ paddingTop: 0 }}>
-            {/* Profile Strip */}
-            <View style={styles.profileStrip}>
-          <Text style={styles.sectionTitle}>Recent Reports</Text>
-          <FlatList
-            horizontal
-            data={scammerProfiles}
-            renderItem={renderProfileItem}
-            keyExtractor={item => item.id}
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.profileList}
-          />
-        </View>
 
-        {/* Scammer Cards */}
-        <View style={styles.scammerCards}>
-          <Text style={styles.sectionTitle}>Avoid These Stores</Text>
-          <FlatList
-            data={scammerProfiles}
-            renderItem={renderScammerCard}
-            keyExtractor={item => item.id}
-            numColumns={2}
-            columnWrapperStyle={styles.cardRow}
-            showsVerticalScrollIndicator={false}
-          />
-        </View>
+
 
         {/* Report Modal */}
         <Modal
@@ -226,42 +240,30 @@ const ScamShieldApp = () => {
               </View>
               
               <View style={styles.formGroup}>
-                <Text style={styles.label}>Upload Screenshot</Text>
-                <TouchableOpacity style={styles.uploadButton}>
-                  <Ionicons name="cloud-upload" size={24} color="#3498db" />
-                  <Text style={styles.uploadText}>Tap to upload</Text>
-                </TouchableOpacity>
-              </View>
-              
-              <View style={styles.formGroup}>
-                <Text style={styles.label}>Tags</Text>
-                <View style={styles.tagsContainer}>
-                  {['Crypto', 'Phishing', 'Job', 'Romance'].map(tag => (
-                    <TouchableOpacity 
-                      key={tag} 
-                      style={[
-                        styles.tag,
-                        reportForm.tags.includes(tag) && styles.tagSelected
-                      ]}
-                      onPress={() => {
-                        if (reportForm.tags.includes(tag)) {
-                          setReportForm({
-                            ...reportForm,
-                            tags: reportForm.tags.filter(t => t !== tag)
-                          });
-                        } else {
-                          setReportForm({
-                            ...reportForm,
-                            tags: [...reportForm.tags, tag]
-                          });
-                        }
-                      }}
-                    >
-                      <Text style={styles.tagText}>{tag}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              </View>
+  <Text style={styles.label}>Your Phone Number</Text>
+  <TextInput
+    style={styles.input}
+    placeholder="Enter your number so we can contact you"
+    keyboardType="phone-pad"
+    value={reportForm.phonenumber}
+    onChangeText={(text) =>
+      setReportForm({ ...reportForm, phonenumber: text })
+    }
+  />
+</View>
+
+             <Text style={styles.disclaimer}>
+  <Text style={styles.disclaimerBold}>DISCLAIMER:</Text>{' '}
+  Do not make false or misleading claims of fraud or scam cases. Only report{' '}
+  <Text style={styles.disclaimerBold}>genuine incidents</Text>{' '}
+  so others in the community can stay informed and cautious. This platform is
+  intended to help and protect our community.{'\n\n'}
+  If you wish to contact us or discuss a report, please reach out at{' '}
+  <Text style={styles.disclaimerBold}>9812121212</Text>.
+</Text>
+
+
+                
             </ScrollView>
             
             <View style={styles.modalFooter}>
@@ -316,8 +318,6 @@ const ScamShieldApp = () => {
               </View>
             </Modal>
           </View>
-        </Animated.ScrollView>
-      </View>
     </SafeAreaView>
   );
 };
@@ -330,13 +330,33 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  headerContent: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
-    paddingHorizontal: 16,
-  },
+headerContent: {
+  flexDirection: 'row',
+  justifyContent: 'flex-start', // ⬅ align to left
+  alignItems: 'center',
+  width: '100%',
+  paddingHorizontal: 16,
+},
+
+disclaimer: {
+  marginTop: 10,
+  paddingVertical: 10,
+  paddingHorizontal: 12,
+  borderRadius: 10,
+  borderWidth: 1,
+  borderColor: 'rgba(255,0,0,0.35)',
+  backgroundColor: 'rgba(255,0,0,0.08)',
+
+  color: '#ff3b30',
+  fontSize: 12,
+  fontWeight: '700',
+  lineHeight: 16,
+},
+
+disclaimerBold: {
+  color: '#ff3b30',
+  fontWeight: '900',
+},
   appTitle: {
     fontFamily: 'Poppins-Medium',
     fontSize: 24,
@@ -345,7 +365,7 @@ const styles = StyleSheet.create({
   },
   reportButton: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     backgroundColor: '#3498db',
     paddingHorizontal: 16,
     paddingVertical: 8,
@@ -387,7 +407,6 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   profileStrip: {
-    marginBottom: 24,
   },
   profileList: {
     paddingRight: 16,
@@ -413,6 +432,12 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: '#f39c12',
   },
+listContent: {
+  paddingHorizontal: 16,
+  paddingBottom: 24,
+}
+,
+
   lowBorder: {
     borderWidth: 3,
     borderColor: '#95a5a6',
@@ -657,6 +682,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: 'white',
   },
+  emptyText: {
+  textAlign: 'center',
+  marginTop: 40,
+  color: '#7f8c8d',
+  fontSize: 14,
+},
+
 });
 
 export default ScamShieldApp;

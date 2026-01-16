@@ -138,7 +138,7 @@ const UniversityResourcesPage = () => {
 
       <ScrollView style={styles.scrollView}>
         <Text style={styles.intro}>
-          Here are some of the most helpful resources available to all UTA students.
+          Some Resources provided by your university for you
         </Text>
 
         <View style={styles.resourceList}>
@@ -184,7 +184,6 @@ const styles = StyleSheet.create({
   intro: {
     fontSize: 16,
     color: '#2a4365',
-    marginVertical: 24,
     textAlign: 'center',
     paddingHorizontal: 16,
   },

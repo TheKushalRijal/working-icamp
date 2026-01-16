@@ -133,14 +133,15 @@ const ProfilePage = () => {
   }, []);
 
   const profileSections: ProfileSection[] = [
-  { icon: 'school', title: "University Info", description: "Campus resources, academic calendar", route: "Outside", color: "#7C3AED" },
+  //{ icon: 'school', title: "University Info", description: "Campus resources, academic calendar", route: "Outside", color: "#7C3AED" },
   { icon: 'flight', title: "Visa Guidance", description: "F1 visa tips, OPT/CPT info", route: "Visa", color: "#059669" },
     { icon: 'local-offer', title: "Health insurance and clinics", description: "Emergency clinics and health insurances for you", route: "insurance", color: "#16A34A" },
 
-  { icon: 'directions-car', title: "Driving Schools", description: "Get your licence with a driving school", route: "Driving", color: "#2563EB" },
   { icon: 'menu-book', title: "Student Resources", description: "Tutoring, career services", route: "Resources", color: "#D97706" },
   { icon: 'local-offer', title: "Student Discounts", description: "Discounts for students only", route: "Discounts", color: "#16A34A" },
   { icon: 'security', title: "Avoid Scams", description: "Common frauds to watch for", route: "Scams", color: "#DC2626" },
+    { icon: 'directions-car', title: "Driving Schools", description: "Get your licence with a driving school", route: "Driving", color: "#2563EB" },
+
 ];
 
 

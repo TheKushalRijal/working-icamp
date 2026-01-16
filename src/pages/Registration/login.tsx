@@ -26,6 +26,7 @@ type RootStackParamList = {
   Main: undefined;
   Register: undefined;
   Home: undefined;
+  terms:undefined;
 };
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList>;
@@ -64,6 +65,14 @@ const [formData, setFormData] = useState<{ university?: string }>({});
     }
     fetchUniversity();
   }, []);
+interface LoginResponse {
+  message?: string;
+  error?: string;
+  user?: any;
+  university_data?: any;
+  access?: string;
+  refresh?: string;
+}
 
   const handleSubmit = async () => {
     setIsLoading(true);
@@ -142,22 +151,41 @@ const university_data = data.university_data;
         }
 
         navigation.reset({
-          index: 0,
-          routes: [{ name: 'Main' }],
-        });
-      } else {
-        setError(
-          data.error || 'Login failed: Invalid credentials or server error.'
-        );
-      }
-    } catch (err) {
-      console.error('Login error:', err);
-      setError('Something went wrong. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        index: 0,
+        routes: [{ name: 'Main' }],
+      });
 
+      return;
+    }
+
+    // ❌ Defensive fallback (should not happen)
+    setError('Login failed. Invalid server response.');
+
+  } catch (err: unknown) {
+    if (!axios.isAxiosError(err)) {
+      setError('Unexpected error occurred.');
+      return;
+    }
+
+    // ❌ Backend unreachable / timeout
+    if (!err.response) {
+      setError('Unable to connect to server. Please try again later.');
+      return;
+    }
+
+    const data = err.response.data as LoginResponse | undefined;
+
+    // ❌ Backend error (THIS IS WHAT YOU WANT)
+    if (data?.error) {
+      setError(data.error);
+      return;
+    }
+
+    setError('Login failed. Please try again.');
+  } finally {
+    setIsLoading(false);
+  }
+};
   
 
 
@@ -235,6 +263,7 @@ if (data.user.university_name) {
                 <View>
                     
 
+
      <UniversitySelector
   selectedUniversityId={selectedUniversityId}
   onSelectUniversity={(id) => {
@@ -242,7 +271,6 @@ if (data.user.university_name) {
     setFormData(prev => ({ ...prev, university: id.toString() }));
   }}
 />
-
 
 </View>
 
@@ -278,11 +306,19 @@ if (data.user.university_name) {
         </View>
 
         <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            By continuing, you agree to our{' '}
-            <Text style={styles.link}>Terms</Text> and <Text style={styles.link}>Privacy Policy</Text>
-          </Text>
-        </View>
+  <Text style={styles.footerText}>
+    By continuing, you agree to our{' '}
+  </Text>
+
+  <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+    <TouchableOpacity onPress={() => navigation.navigate('terms')}>
+      <Text style={styles.link}>Terms and Policy</Text>
+    </TouchableOpacity>
+
+
+  </View>
+</View>
+
       </View>
     </KeyboardAvoidingView>
   );
@@ -306,18 +342,10 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: '#091429',// for card
-    paddingVertical: 24,
+    paddingVertical: 10,
     alignItems: 'center',
   },
-  logoCircle: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'white',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
+
   logoText: {
     color: '#DC143C',
     fontWeight: 'bold',
@@ -345,21 +373,20 @@ const styles = StyleSheet.create({
   },
   form: {
     paddingHorizontal: 24,
-    paddingVertical: 16,
+    paddingVertical: 6,
   },
   label: {
     fontSize: 14,
     color: '#374151',
     fontWeight: '600',
-    marginBottom: 4,
   },
   input: {
     borderWidth: 1,
     borderColor: '#D1D5DB',
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 12,
-    marginBottom: 16,
+    paddingVertical: 2,
+    marginBottom: 6,
     fontSize: 16,
     color: '#111827',
   },
@@ -379,6 +406,7 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: 'center',
+    marginTop:20,
     flexDirection: 'row',
     justifyContent: 'center',
   },
